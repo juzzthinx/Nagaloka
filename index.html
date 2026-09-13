@@ -1,1060 +1,4205 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>NAGALOKA</title>
+
+<title>NAGALOKA — Realm of the Naga</title>
+
 <style>
-  html,body{margin:0;padding:0;overflow:hidden;background:#000;font-family:'Courier New',monospace;color:#d4c5a3;touch-action:none;}
-  #c{display:block;width:100vw;height:100vh;}
-  #ui{position:fixed;inset:0;pointer-events:none;z-index:10;}
-  #crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:6px;height:6px;border-radius:50%;background:rgba(212,197,163,0.5);}
-  #hud{position:absolute;bottom:0;left:0;right:0;padding:14px 18px;display:flex;justify-content:space-between;align-items:flex-end;font-size:13px;letter-spacing:1px;}
-  .bar-wrap{width:140px;}
-  .bar-label{font-size:10px;opacity:0.7;margin-bottom:3px;text-transform:uppercase;letter-spacing:2px;}
-  .bar-bg{height:8px;background:rgba(212,197,163,0.15);border:1px solid rgba(212,197,163,0.3);}
-  .bar-fill{height:100%;transition:width 0.15s;}
-  #hpfill{background:linear-gradient(90deg,#7a1f1f,#c93a3a);}
-  #uvfill{background:linear-gradient(90deg,#2a4a7a,#6ab4e8);}
-  #stfill{background:linear-gradient(90deg,#4a6a2a,#9ad84a);}
-  #ammo{font-size:22px;color:#e8d9b8;text-shadow:0 0 8px rgba(200,180,120,0.4);}
-  #msg{position:absolute;top:20%;left:50%;transform:translate(-50%,0);font-size:15px;letter-spacing:3px;opacity:0;transition:opacity 0.8s;text-align:center;text-shadow:0 0 10px #000;}
-  #title{position:fixed;inset:0;background:radial-gradient(ellipse at center,#1a1508 0%,#000 80%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;cursor:pointer;}
-  #title h1{font-size:min(14vw,90px);letter-spacing:14px;margin:0;color:#c9a86a;text-shadow:0 0 30px rgba(201,168,106,0.5),0 0 60px rgba(201,168,106,0.2);font-weight:normal;}
-  #title .sub{letter-spacing:6px;opacity:0.6;margin-top:10px;font-size:13px;}
-  #title .start{margin-top:60px;padding:14px 40px;border:1px solid #6a5a3a;color:#c9a86a;letter-spacing:4px;font-size:13px;animation:pulse 2s infinite;}
-  @keyframes pulse{0%,100%{opacity:0.5;}50%{opacity:1;}}
-  #damageFlash{position:fixed;inset:0;background:rgba(150,10,10,0.35);opacity:0;pointer-events:none;transition:opacity 0.3s;z-index:20;}
-  #uvFlash{position:fixed;inset:0;background:radial-gradient(ellipse at center,rgba(150,200,255,0.08) 0%,rgba(150,200,255,0) 60%);opacity:0;pointer-events:none;transition:opacity 0.2s;z-index:5;}
-  #deathScreen{position:fixed;inset:0;background:rgba(0,0,0,0.92);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:200;}
-  #deathScreen h2{color:#8a2a2a;letter-spacing:8px;font-size:32px;}
-  #deathScreen .restart{margin-top:30px;padding:12px 30px;border:1px solid #8a2a2a;color:#c98a8a;letter-spacing:3px;cursor:pointer;pointer-events:all;}
-  #mobileControls{position:fixed;inset:0;z-index:15;pointer-events:none;}
-  #joystick{position:absolute;bottom:110px;left:30px;width:110px;height:110px;border-radius:50%;border:2px solid rgba(212,197,163,0.3);pointer-events:all;}
-  #joystickKnob{position:absolute;top:35px;left:35px;width:40px;height:40px;border-radius:50%;background:rgba(212,197,163,0.4);}
-  #fireBtn{position:absolute;bottom:130px;right:30px;width:80px;height:80px;border-radius:50%;border:2px solid rgba(200,80,80,0.5);background:rgba(200,80,80,0.15);pointer-events:all;display:flex;align-items:center;justify-content:center;font-size:11px;letter-spacing:2px;color:#e8b8b8;}
-  #uvBtn{position:absolute;bottom:225px;right:40px;width:60px;height:60px;border-radius:50%;border:2px solid rgba(120,180,230,0.5);background:rgba(120,180,230,0.15);pointer-events:all;display:flex;align-items:center;justify-content:center;font-size:10px;letter-spacing:1px;color:#b8d8e8;}
-  #lookZone{position:absolute;top:0;right:0;width:60%;height:100%;pointer-events:all;}
-  #howto{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);font-size:11px;opacity:0.5;letter-spacing:1px;z-index:11;text-align:center;}
-  #rotateWarning{display:none;position:fixed;inset:0;background:#000;color:#c9a86a;z-index:400;align-items:center;justify-content:center;text-align:center;font-size:15px;letter-spacing:2px;padding:20px;line-height:1.8;}
-  @media (orientation:landscape) and (max-height:520px){
-    #rotateWarning{display:flex;}
-  }
-  #vignette{position:fixed;inset:0;pointer-events:none;z-index:8;box-shadow:inset 0 0 18vw 4vw rgba(0,0,0,0.85);opacity:0.75;transition:opacity 0.6s, box-shadow 0.6s;}
-  #scopeOverlay{position:fixed;inset:0;pointer-events:none;z-index:12;display:none;}
-  #scopeOverlay svg{width:100%;height:100%;}
-  #scopeBtn{position:absolute;bottom:225px;right:115px;width:60px;height:60px;border-radius:50%;border:2px solid rgba(212,197,163,0.5);background:rgba(212,197,163,0.12);pointer-events:all;display:flex;align-items:center;justify-content:center;font-size:10px;letter-spacing:1px;color:#d4c5a3;}
+
+*{box-sizing:border-box}
+
+html,body{margin:0;padding:0;overflow:hidden;background:#030706;color:#d9cfb5;font-family:"Courier New",monospace;touch-action:none}
+
+#c{display:block;width:100vw;height:100vh}
+
+#ui{position:fixed;inset:0;pointer-events:none;z-index:20}
+
+#crosshair{position:absolute;left:50%;top:50%;width:7px;height:7px;border:1px solid rgba(225,215,185,.75);border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 10px #000}
+
+#msg{position:absolute;top:16%;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .5s;text-align:center;letter-spacing:3px;text-shadow:0 2px 10px #000;max-width:90%}
+
+#quest{position:absolute;top:22px;left:22px;text-shadow:0 2px 8px #000}
+
+#quest .qtitle{font-size:15px;color:#d7b76c;letter-spacing:2px}
+
+#quest .qline{font-size:11px;opacity:.75;margin-top:7px;letter-spacing:1px}
+
+#distance{position:absolute;top:22px;left:50%;transform:translateX(-50%);font-size:12px;letter-spacing:3px;text-shadow:0 2px 8px #000}
+
+#hud{position:absolute;left:20px;right:20px;bottom:18px;display:flex;justify-content:space-between;align-items:flex-end}
+
+.bar{width:170px;margin-top:8px}
+
+.label{font-size:9px;letter-spacing:2px;opacity:.65;margin-bottom:3px}
+
+.bg{height:8px;border:1px solid rgba(220,205,170,.3);background:rgba(0,0,0,.35)}
+
+.fill{height:100%;transition:width .12s}
+
+#hp{background:linear-gradient(90deg,#641d1d,#c84a45)}
+
+#st{background:linear-gradient(90deg,#315327,#8dc95a)}
+
+#uv{background:linear-gradient(90deg,#2d4f82,#9bd5ff)}
+
+#ammo{font-size:21px;color:#e9ddbd;text-align:right}
+
+#status{text-align:right;font-size:9px;letter-spacing:2px;opacity:.6;margin-top:5px}
+
+#title,#death{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at center,#172018 0%,#020403 72%);cursor:pointer}
+
+#title h1{font-size:min(14vw,96px);font-weight:normal;letter-spacing:13px;color:#c8aa68;margin:0;text-shadow:0 0 35px rgba(200,170,105,.35)}
+
+.sub{margin-top:10px;opacity:.6;letter-spacing:6px;font-size:12px}
+
+.start,.restart{margin-top:52px;padding:15px 34px;border:1px solid #705e3d;color:#d3b56e;letter-spacing:4px;animation:pulse 2s infinite}
+
+@keyframes pulse{50%{opacity:.35}}
+
+#death{display:none;background:rgba(0,0,0,.94);z-index:200}
+
+#death h2{font-size:27px;letter-spacing:6px;color:#9b3434;font-weight:normal}
+
+#death .restart{pointer-events:all;cursor:pointer;margin-top:25px}
+
+#controls{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-size:10px;opacity:.45;letter-spacing:1px;white-space:nowrap}
+
+#mobile{display:none;position:fixed;inset:0;z-index:30;pointer-events:none}
+
+#joy{position:absolute;left:25px;bottom:55px;width:118px;height:118px;border:2px solid rgba(220,210,185,.25);border-radius:50%;pointer-events:all}
+
+#knob{position:absolute;left:37px;top:37px;width:40px;height:40px;border-radius:50%;background:rgba(210,200,175,.32)}
+
+.btn{position:absolute;width:70px;height:70px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;font-size:10px;letter-spacing:1px;pointer-events:all}
+
+#fire{right:25px;bottom:55px;border:2px solid rgba(210,70,70,.55);background:rgba(130,30,30,.18)}
+
+#uvb{right:48px;bottom:140px;border:2px solid rgba(120,190,255,.45);background:rgba(60,110,170,.14)}
+
+#aim{right:130px;bottom:70px;border:2px solid rgba(210,200,175,.35);background:rgba(210,200,175,.1)}
+
+#sprint{left:155px;bottom:70px;border:2px solid rgba(150,210,100,.3);background:rgba(80,120,50,.1)}
+
+#interact{right:125px;bottom:150px;border:2px solid rgba(210,180,100,.35);background:rgba(150,110,40,.1);display:none}
+
+#vignette{position:fixed;inset:0;z-index:15;pointer-events:none;box-shadow:inset 0 0 16vw 4vw rgba(0,0,0,.82);transition:box-shadow .3s}
+
+#damage{position:fixed;inset:0;z-index:16;pointer-events:none;background:rgba(170,20,20,.4);opacity:0;transition:opacity .15s}
+
+#boss{position:absolute;left:50%;top:8px;transform:translateX(-50%);width:min(420px,55vw);display:none}
+
+#boss .bname{text-align:center;color:#c9a86a;font-size:11px;letter-spacing:4px;margin-bottom:4px}
+
+#boss .bbg{height:7px;border:1px solid rgba(210,180,110,.5);background:rgba(0,0,0,.5)}
+
+#boss .bfill{height:100%;background:linear-gradient(90deg,#641b1b,#d59a47)}
+
+@media(max-width:700px){
+
+ #controls{display:none}
+
+ #mobile{display:block}
+
+ #quest{top:12px;left:12px}
+
+ #quest .qtitle{font-size:11px}
+
+ #quest .qline{font-size:9px}
+
+ #hud{left:12px;right:12px;bottom:12px}
+
+ .bar{width:125px}
+
+ #ammo{font-size:18px}
+
+}
+
 </style>
+
 </head>
+
 <body>
-
-<div id="title">
-  <h1>NAGALOKA</h1>
-  <div class="sub">〜 realm of the naga 〜</div>
-  <div class="start" id="startBtn">▸ ENTER THE JUNGLE</div>
-</div>
-
-<div id="rotateWarning">↻<br>NAGALOKA IS BEST EXPERIENCED<br>UPRIGHT<br><span style="opacity:0.6;font-size:12px;">turn your device back to portrait</span></div>
 
 <canvas id="c"></canvas>
 
-<div id="vignette"></div>
-<div id="damageFlash"></div>
-<div id="uvFlash"></div>
-<div id="scopeOverlay">
-  <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-    <circle cx="50" cy="50" r="46" fill="none" stroke="#0a0a0a" stroke-width="8"/>
-    <circle cx="50" cy="50" r="38" fill="none" stroke="#1a1a1a" stroke-width="1.5" opacity="0.8"/>
-    <line x1="50" y1="4" x2="50" y2="20" stroke="#1a1a1a" stroke-width="1"/>
-    <line x1="50" y1="80" x2="50" y2="96" stroke="#1a1a1a" stroke-width="1"/>
-    <line x1="4" y1="50" x2="20" y2="50" stroke="#1a1a1a" stroke-width="1"/>
-    <line x1="80" y1="50" x2="96" y2="50" stroke="#1a1a1a" stroke-width="1"/>
-    <circle cx="50" cy="50" r="1.2" fill="#c9a86a"/>
-  </svg>
+<div id="title">
+
+  <h1>NAGALOKA</h1>
+
+  <div class="sub">〜 REALM OF THE NAGA 〜</div>
+
+  <div class="start" id="start">▸ ENTER THE JUNGLE</div>
+
+</div>
+
+<div id="death">
+
+  <h2>THE JUNGLE HAS CLAIMED YOU</h2>
+
+  <div class="restart" id="restart">▸ RETURN TO THE MIST</div>
+
 </div>
 
 <div id="ui">
-  <div id="crosshair"></div>
-  <div id="msg"></div>
-  <div id="hud">
-    <div>
-      <div class="bar-wrap">
-        <div class="bar-label">Vitality</div>
-        <div class="bar-bg"><div class="bar-fill" id="hpfill" style="width:100%"></div></div>
-      </div>
-      <div class="bar-wrap" style="margin-top:8px;">
-        <div class="bar-label">Stamina</div>
-        <div class="bar-bg"><div class="bar-fill" id="stfill" style="width:100%"></div></div>
-      </div>
-    </div>
-    <div style="text-align:right;">
-      <div id="ammo">∞</div>
-      <div class="bar-wrap" style="margin-top:6px;">
-        <div class="bar-label">UV Charge</div>
-        <div class="bar-bg"><div class="bar-fill" id="uvfill" style="width:100%"></div></div>
-      </div>
-    </div>
+
+  <div id="quest">
+
+    <div class="qtitle">THE LOST SERPENT</div>
+
+    <div class="qline" id="objective">Find the ancient Naga shrine</div>
+
   </div>
-  <div id="howto">WASD move · MOUSE look · CLICK fire · HOLD C to aim · RIGHT-CLICK / F for UV torch · SHIFT sprint</div>
+
+  <div id="distance">NAGALOKA • 0 m</div>
+
+  <div id="boss">
+
+    <div class="bname">THE ANCIENT NAGA</div>
+
+    <div class="bbg">
+
+      <div class="bfill" id="bossfill"></div>
+
+    </div>
+
+  </div>
+
+  <div id="crosshair"></div>
+
+  <div id="msg"></div>
+
+  <div id="hud">
+
+    <div>
+
+      <div class="label">VITALITY</div>
+
+      <div class="bar">
+
+        <div class="bg">
+
+          <div class="fill" id="hp"></div>
+
+        </div>
+
+      </div>
+
+      <div class="label" style="margin-top:8px">STAMINA</div>
+
+      <div class="bar">
+
+        <div class="bg">
+
+          <div class="fill" id="st"></div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div>
+
+      <div id="ammo">∞</div>
+
+      <div class="label">UV CHARGE</div>
+
+      <div class="bar">
+
+        <div class="bg">
+
+          <div class="fill" id="uv"></div>
+
+        </div>
+
+      </div>
+
+      <div id="status">THE FOREST IS WATCHING</div>
+
+    </div>
+
+  </div>
+
+  <div id="controls">
+
+    WASD MOVE · MOUSE LOOK · CLICK FIRE · C / RMB UV AIM · SHIFT SPRINT · SPACE DODGE · E INTERACT
+
+  </div>
+
 </div>
 
-<div id="mobileControls" style="display:none;">
-  <div id="lookZone"></div>
-  <div id="joystick"><div id="joystickKnob"></div></div>
-  <div id="scopeBtn">AIM</div>
-  <div id="uvBtn">UV<br>TORCH</div>
-  <div id="fireBtn">FIRE</div>
+<div id="mobile">
+
+  <div id="joy">
+
+    <div id="knob"></div>
+
+  </div>
+
+  <div class="btn" id="fire">FIRE</div>
+
+  <div class="btn" id="uvb">
+
+    UV<br>TORCH
+
+  </div>
+
+  <div class="btn" id="aim">AIM</div>
+
+  <div class="btn" id="sprint">RUN</div>
+
+  <div class="btn" id="interact">ENTER</div>
+
 </div>
 
-<div id="deathScreen">
-  <h2>THE NAGA HAS CLAIMED YOU</h2>
-  <div class="restart" id="restartBtn">▸ RETURN TO THE MIST</div>
-</div>
+<div id="vignette"></div>
+
+<div id="damage"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
 <script>
-(function(){
+
+(() => {
+
 "use strict";
 
-// ============ AUDIO: procedural gamelan engine ============
-let actx = null;
-const slendro = [0, 231, 435, 702, 933]; // cents offsets approximating slendro pentatonic within an octave
-function centsToRatio(c){ return Math.pow(2, c/1200); }
-const baseFreq = 110; // A2-ish base for gong
+/* ============================================================
 
-function initAudio(){
-  if(actx) return;
-  actx = new (window.AudioContext||window.webkitAudioContext)();
-  masterGain = actx.createGain();
-  masterGain.gain.value = 0.5;
-  masterGain.connect(actx.destination);
-  reverb = createReverb();
-  masterGain.connect(reverb.input);
-  reverb.output.connect(actx.destination);
-  startGamelanLoop();
-  startDrone();
-}
+   NAGALOKA 1.0
 
-let masterGain, reverb;
+   Larger 3D jungle / temple / Naga prototype
 
-function createReverb(){
-  const convolver = actx.createConvolver();
-  const len = actx.sampleRate * 2.2;
-  const buf = actx.createBuffer(2, len, actx.sampleRate);
-  for(let ch=0;ch<2;ch++){
-    const d = buf.getChannelData(ch);
-    for(let i=0;i<len;i++){
-      d[i] = (Math.random()*2-1) * Math.pow(1 - i/len, 2.5);
-    }
-  }
-  convolver.buffer = buf;
-  const input = actx.createGain();
-  const output = actx.createGain();
-  output.gain.value = 0.6;
-  input.connect(convolver);
-  convolver.connect(output);
-  return {input, output};
-}
+   GitHub Pages ready
 
-function pluckTone(freq, time, dur, vol, type){
-  // metallophone-ish gamelan bell: FM-ish with fast attack, slow decay
-  const osc = actx.createOscillator();
-  const osc2 = actx.createOscillator();
-  const gain = actx.createGain();
-  osc.type = type||'sine';
-  osc2.type = 'sine';
-  osc.frequency.value = freq;
-  osc2.frequency.value = freq * 2.01; // slight detune for metallic shimmer
-  const g2 = actx.createGain();
-  g2.gain.value = 0.15;
-  osc2.connect(g2);
-  g2.connect(gain);
-  osc.connect(gain);
-  gain.gain.setValueAtTime(0, time);
-  gain.gain.linearRampToValueAtTime(vol, time + 0.008);
-  gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
-  gain.connect(masterGain);
-  gain.connect(reverb.input);
-  osc.start(time); osc2.start(time);
-  osc.stop(time+dur+0.1); osc2.stop(time+dur+0.1);
-}
+   ============================================================ */
 
-function gongHit(time, vol){
-  const osc = actx.createOscillator();
-  osc.type = 'sine';
-  osc.frequency.value = baseFreq/2;
-  const gain = actx.createGain();
-  gain.gain.setValueAtTime(0, time);
-  gain.gain.linearRampToValueAtTime(vol, time+0.05);
-  gain.gain.exponentialRampToValueAtTime(0.001, time+4.5);
-  osc.connect(gain);
-  gain.connect(masterGain);
-  gain.connect(reverb.input);
-  osc.start(time); osc.stop(time+4.6);
-  // inharmonic partials for metallic gong texture
-  [1.5, 2.4, 3.1].forEach(mult=>{
-    const o = actx.createOscillator();
-    o.type='sine'; o.frequency.value = baseFreq/2*mult;
-    const g = actx.createGain();
-    g.gain.setValueAtTime(0,time);
-    g.gain.linearRampToValueAtTime(vol*0.25, time+0.05);
-    g.gain.exponentialRampToValueAtTime(0.001, time+3.2);
-    o.connect(g); g.connect(masterGain); g.connect(reverb.input);
-    o.start(time); o.stop(time+3.3);
-  });
-}
+const $ = id => document.getElementById(id);
 
-let droneNodes = [];
-function startDrone(){
-  const o = actx.createOscillator();
-  o.type='sine'; o.frequency.value = baseFreq/4;
-  const g = actx.createGain();
-  g.gain.value = 0.04;
-  o.connect(g); g.connect(masterGain); g.connect(reverb.input);
-  o.start();
-  droneNodes.push(o);
-}
+const canvas = $("c");
 
-let gamelanStep = 0;
-let gamelanTimer = null;
-function startGamelanLoop(){
-  const stepDur = 0.9;
-  function scheduleStep(){
-    const t = actx.currentTime + 0.05;
-    const scaleIdx = slendro[Math.floor(Math.random()*slendro.length)];
-    const octave = [1,2,4][Math.floor(Math.random()*3)];
-    const freq = baseFreq * 2 * centsToRatio(scaleIdx) * octave;
-    if(Math.random() < 0.75){
-      pluckTone(freq, t, 1.6 + Math.random()*0.8, 0.09 + Math.random()*0.05, 'sine');
-    }
-    if(gamelanStep % 16 === 0){
-      gongHit(t, 0.18);
-    }
-    if(gamelanStep % 6 === 0 && Math.random()<0.5){
-      pluckTone(freq*2, t+0.15, 0.6, 0.04, 'triangle');
-    }
-    gamelanStep++;
-    gamelanTimer = setTimeout(scheduleStep, stepDur*1000*(0.85+Math.random()*0.3));
-  }
-  scheduleStep();
-}
+const isMobile =
 
-function sfxShoot(){
-  if(!actx) return;
-  const t = actx.currentTime;
-  const noise = actx.createBufferSource();
-  const buf = actx.createBuffer(1, actx.sampleRate*0.15, actx.sampleRate);
-  const d = buf.getChannelData(0);
-  for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);
-  noise.buffer = buf;
-  const filt = actx.createBiquadFilter();
-  filt.type='bandpass'; filt.frequency.value=1800;
-  const g = actx.createGain(); g.gain.value=0.35;
-  noise.connect(filt); filt.connect(g); g.connect(masterGain);
-  noise.start(t);
-}
+  /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ||
 
-function sfxHit(){
-  if(!actx) return;
-  const t = actx.currentTime;
-  const o = actx.createOscillator();
-  o.type='square'; o.frequency.setValueAtTime(180,t);
-  o.frequency.exponentialRampToValueAtTime(40, t+0.15);
-  const g = actx.createGain();
-  g.gain.setValueAtTime(0.25,t);
-  g.gain.exponentialRampToValueAtTime(0.001,t+0.15);
-  o.connect(g); g.connect(masterGain);
-  o.start(t); o.stop(t+0.16);
-}
+  "ontouchstart" in window;
 
-function sfxScream(){
-  if(!actx) return;
-  const t = actx.currentTime;
-  const o = actx.createOscillator();
-  o.type='sawtooth';
-  o.frequency.setValueAtTime(900+Math.random()*300,t);
-  o.frequency.exponentialRampToValueAtTime(200,t+0.9);
-  const g = actx.createGain();
-  g.gain.setValueAtTime(0.0001,t);
-  g.gain.exponentialRampToValueAtTime(0.15,t+0.05);
-  g.gain.exponentialRampToValueAtTime(0.001,t+0.9);
-  const filt = actx.createBiquadFilter();
-  filt.type='bandpass'; filt.frequency.value=1200;
-  o.connect(filt); filt.connect(g); g.connect(masterGain); g.connect(reverb.input);
-  o.start(t); o.stop(t+1);
-}
+/* ============================================================
 
-function sfxDamage(){
-  if(!actx) return;
-  const t = actx.currentTime;
-  const o = actx.createOscillator();
-  o.type='sine'; o.frequency.setValueAtTime(120,t);
-  o.frequency.exponentialRampToValueAtTime(60,t+0.3);
-  const g = actx.createGain();
-  g.gain.setValueAtTime(0.3,t);
-  g.gain.exponentialRampToValueAtTime(0.001,t+0.3);
-  o.connect(g); g.connect(masterGain);
-  o.start(t); o.stop(t+0.3);
-}
+   THREE.JS WORLD
 
-// ============ THREE.JS SETUP ============
-const canvas = document.getElementById('c');
-const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
-renderer.setSize(window.innerWidth, window.innerHeight);
+   ============================================================ */
+
+let scene = new THREE.Scene();
+
+scene.background = new THREE.Color(0x07100d);
+
+scene.fog = new THREE.FogExp2(
+
+  0x07100d,
+
+  0.018
+
+);
+
+let renderer = new THREE.WebGLRenderer({
+
+  canvas,
+
+  antialias:true
+
+});
+
+renderer.setPixelRatio(
+
+  Math.min(devicePixelRatio,1.7)
+
+);
+
+renderer.setSize(
+
+  innerWidth,
+
+  innerHeight
+
+);
+
 renderer.shadowMap.enabled = true;
 
-const scene = new THREE.Scene();
-const fogColor = 0x0a1410;
-scene.background = new THREE.Color(fogColor);
-scene.fog = new THREE.FogExp2(fogColor, 0.045);
+renderer.shadowMap.type =
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.05, 200);
-const player = new THREE.Object3D();
-player.position.set(0, 1.7, 8);
-player.add(camera);
+  THREE.PCFSoftShadowMap;
+
+let camera = new THREE.PerspectiveCamera(
+
+  72,
+
+  innerWidth/innerHeight,
+
+  .05,
+
+  500
+
+);
+
+let player = new THREE.Object3D();
+
+player.position.set(
+
+  0,
+
+  2,
+
+  105
+
+);
+
 scene.add(player);
 
-// yaw/pitch rig
-let yawObj = player;
+player.add(camera);
+
+camera.position.set(
+
+  0,
+
+  0,
+
+  0
+
+);
+
+/* ============================================================
+
+   GAME STATE
+
+   ============================================================ */
+
+let yaw = 0;
+
 let pitch = 0;
 
-// ---- Lighting ----
-// Cold, thin moonlight breaking through canopy - the only "natural" light source.
-// Low intensity + tight shadow frustum so it rakes across trunks instead of flatly lighting everything.
-const moonLight = new THREE.DirectionalLight(0x93a8d6, 0.5);
-moonLight.position.set(-24, 34, -14);
-moonLight.castShadow = true;
-moonLight.shadow.mapSize.set(1024, 1024);
-moonLight.shadow.camera.near = 5;
-moonLight.shadow.camera.far = 90;
-moonLight.shadow.camera.left = -40;
-moonLight.shadow.camera.right = 40;
-moonLight.shadow.camera.top = 40;
-moonLight.shadow.camera.bottom = -40;
-moonLight.shadow.bias = -0.0025;
-scene.add(moonLight);
-scene.add(moonLight.target);
-
-// Hemisphere light gives a believable sky/ground color split (cold green-blue above,
-// near-black rot green below) instead of one flat ambient wash - this is what was
-// making everything read as a uniform grey-green wall before.
-const hemi = new THREE.HemisphereLight(0x33503f, 0x05070a, 0.5);
-scene.add(hemi);
-
-// Very low ambient floor so shadows stay dark rather than fully black voids.
-const ambient = new THREE.AmbientLight(0x0e1712, 0.22);
-scene.add(ambient);
-
-// UV torch (spotlight attached to camera) - narrower, punchier beam with a cold
-// violet-white core so it reads as distinctly artificial against the green murk.
-const uvLight = new THREE.SpotLight(0xaad4ff, 0, 20, Math.PI/9, 0.35, 1.8);
-uvLight.castShadow = true;
-uvLight.shadow.mapSize.set(512, 512);
-uvLight.shadow.bias = -0.004;
-camera.add(uvLight);
-uvLight.position.set(0,0,0);
-const uvTarget = new THREE.Object3D();
-uvTarget.position.set(0,0,-1);
-camera.add(uvTarget);
-uvLight.target = uvTarget;
-
-// dim handheld fill so world isn't pure black, tinted sickly green
-const handLight = new THREE.PointLight(0x2a3a28, 0.35, 6);
-camera.add(handLight);
-handLight.position.set(0,-0.3,0.5);
-
-// subtle flicker state for moonlight (dappled canopy) and torch (unsteady grip)
-let moonFlickerSeed = Math.random()*100;
-
-// ---- Terrain: jungle mountain ----
-function makeGroundTexture(){
-  const size = 512;
-  const cnv = document.createElement('canvas');
-  cnv.width = cnv.height = size;
-  const ctx = cnv.getContext('2d');
-  ctx.fillStyle = '#14200f';
-  ctx.fillRect(0,0,size,size);
-  for(let i=0;i<4000;i++){
-    const x = Math.random()*size, y = Math.random()*size;
-    const shade = 10 + Math.random()*30;
-    ctx.fillStyle = `rgba(${shade+20},${shade+40},${shade+15},${0.15+Math.random()*0.25})`;
-    ctx.beginPath();
-    ctx.arc(x,y,0.5+Math.random()*2.5,0,Math.PI*2);
-    ctx.fill();
-  }
-  const tex = new THREE.CanvasTexture(cnv);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(40,40);
-  return tex;
-}
-
-function terrainHeight(x,z){
-  return Math.sin(x*0.05)*Math.cos(z*0.05)*3 + Math.sin(x*0.15+z*0.1)*0.8;
-}
-
-const groundGeo = new THREE.PlaneGeometry(300, 300, 100, 100);
-groundGeo.rotateX(-Math.PI/2);
-const posAttr = groundGeo.attributes.position;
-for(let i=0;i<posAttr.count;i++){
-  const x = posAttr.getX(i), z = posAttr.getZ(i);
-  posAttr.setY(i, terrainHeight(x,z));
-}
-groundGeo.computeVertexNormals();
-const groundMat = new THREE.MeshStandardMaterial({map: makeGroundTexture(), roughness:1, metalness:0});
-const ground = new THREE.Mesh(groundGeo, groundMat);
-ground.receiveShadow = true;
-scene.add(ground);
-
-// mountains (distant silhouettes)
-function makeMountainRing(){
-  for(let i=0;i<14;i++){
-    const ang = (i/14)*Math.PI*2 + Math.random()*0.2;
-    const dist = 70 + Math.random()*40;
-    const h = 25 + Math.random()*35;
-    const geo = new THREE.ConeGeometry(18+Math.random()*15, h, 5+Math.floor(Math.random()*3));
-    const mat = new THREE.MeshStandardMaterial({color:0x0d1a12, roughness:1, fog:true});
-    const m = new THREE.Mesh(geo, mat);
-    m.position.set(Math.cos(ang)*dist, h/2-3, Math.sin(ang)*dist);
-    m.rotation.y = Math.random()*Math.PI;
-    scene.add(m);
-  }
-}
-makeMountainRing();
-
-// trees - taller, thicker, more oppressive canopy. A handful of massive "ancient"
-// trees are seeded near the player's start so the scale reads immediately.
-const treeTrunkMat = new THREE.MeshStandardMaterial({color:0x181310, roughness:1});
-const treeLeafMat = new THREE.MeshStandardMaterial({color:0x0a2012, roughness:1});
-const trees = [];
-function makeTree(x,z,ancient){
-  const g = new THREE.Group();
-  const h = ancient ? 14+Math.random()*8 : 7+Math.random()*7;
-  const trunkR = ancient ? 0.6+Math.random()*0.3 : 0.22+Math.random()*0.18;
-  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(trunkR*0.6, trunkR, h, 7), treeTrunkMat);
-  trunk.position.y = h/2;
-  trunk.castShadow = true;
-  trunk.receiveShadow = true;
-  g.add(trunk);
-  const leafCount = ancient ? 4+Math.floor(Math.random()*2) : 3+Math.floor(Math.random()*2);
-  const leafBaseR = ancient ? 2.6 : 1.6;
-  for(let i=0;i<leafCount;i++){
-    const leaf = new THREE.Mesh(new THREE.ConeGeometry(leafBaseR+Math.random()*1.2 - i*0.25, 3.2+Math.random()*2, 7), treeLeafMat);
-    leaf.position.y = h - i*(ancient?1.8:1.3);
-    leaf.rotation.y = Math.random()*Math.PI;
-    leaf.castShadow = true;
-    g.add(leaf);
-  }
-  g.position.set(x, terrainHeight(x,z), z);
-  scene.add(g);
-  trees.push({mesh:g, x, z, r: ancient ? 1.1 : 0.6});
-}
-// dense outer canopy wall
-for(let i=0;i<190;i++){
-  const ang = Math.random()*Math.PI*2;
-  const dist = 6 + Math.random()*55;
-  makeTree(Math.cos(ang)*dist, Math.sin(ang)*dist, false);
-}
-// scattered ancient giants for scale and landmarks
-for(let i=0;i<14;i++){
-  const ang = Math.random()*Math.PI*2;
-  const dist = 10 + Math.random()*40;
-  makeTree(Math.cos(ang)*dist, Math.sin(ang)*dist, true);
-}
-
-// temple ruins - stone pillars
-const stoneMat = new THREE.MeshStandardMaterial({color:0x3a3630, roughness:0.9});
-const pillars = [];
-function makePillar(x,z,h){
-  const geo = new THREE.CylinderGeometry(0.5,0.6,h,8);
-  const m = new THREE.Mesh(geo, stoneMat);
-  m.position.set(x, terrainHeight(x,z)+h/2, z);
-  m.rotation.z = (Math.random()-0.5)*0.15;
-  m.castShadow = true;
-  m.receiveShadow = true;
-  scene.add(m);
-  pillars.push({x,z,r:0.6});
-}
-for(let i=0;i<10;i++){
-  const ang = (i/10)*Math.PI*2;
-  makePillar(Math.cos(ang)*14, Math.sin(ang)*14, 3+Math.random()*2);
-}
-// central altar / naga statue suggestion
-const altarGeo = new THREE.BoxGeometry(2,0.6,2);
-const altar = new THREE.Mesh(altarGeo, stoneMat);
-altar.position.set(0, terrainHeight(0,0)+0.3, 0);
-scene.add(altar);
-
-// fireflies / spore particles
-const particleCount = 200;
-const particleGeo = new THREE.BufferGeometry();
-const particlePos = new Float32Array(particleCount*3);
-for(let i=0;i<particleCount;i++){
-  particlePos[i*3] = (Math.random()-0.5)*80;
-  particlePos[i*3+1] = Math.random()*6+0.3;
-  particlePos[i*3+2] = (Math.random()-0.5)*80;
-}
-particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePos,3));
-const particleMat = new THREE.PointsMaterial({color:0x9fd9a0, size:0.06, transparent:true, opacity:0.6});
-const particles = new THREE.Points(particleGeo, particleMat);
-scene.add(particles);
-
-// ---- Distant glowing eyes: pure atmosphere, no gameplay effect. Faint paired dots
-// that flicker on/off in the tree line - classic "something is watching" cue.
-function makeEyeTexture(){
-  const cnv = document.createElement('canvas');
-  cnv.width = 64; cnv.height = 32;
-  const ctx = cnv.getContext('2d');
-  const grad1 = ctx.createRadialGradient(16,16,0,16,16,10);
-  grad1.addColorStop(0,'rgba(255,60,60,0.9)');
-  grad1.addColorStop(1,'rgba(255,60,60,0)');
-  const grad2 = ctx.createRadialGradient(48,16,0,48,16,10);
-  grad2.addColorStop(0,'rgba(255,60,60,0.9)');
-  grad2.addColorStop(1,'rgba(255,60,60,0)');
-  ctx.fillStyle = grad1; ctx.fillRect(0,0,32,32);
-  ctx.fillStyle = grad2; ctx.fillRect(32,0,32,32);
-  return new THREE.CanvasTexture(cnv);
-}
-const eyeTex = makeEyeTexture();
-const lurkingEyes = [];
-for(let i=0;i<6;i++){
-  const mat = new THREE.SpriteMaterial({map:eyeTex, transparent:true, opacity:0, depthWrite:false});
-  const sprite = new THREE.Sprite(mat);
-  sprite.scale.set(0.9,0.45,1);
-  scene.add(sprite);
-  lurkingEyes.push({sprite, mat, timer: Math.random()*8, visible:false});
-}
-function repositionEyes(en){
-  const ang = Math.random()*Math.PI*2;
-  const dist = 16 + Math.random()*18;
-  const x = player.position.x + Math.cos(ang)*dist;
-  const z = player.position.z + Math.sin(ang)*dist;
-  en.sprite.position.set(x, terrainHeight(x,z)+1.4+Math.random()*1.5, z);
-}
-
-// ============ ENEMIES ============
-// Types: pontianak (fast dash), krasue (floating head, erratic), nenek (slow tank)
-const enemies = [];
-
-function makeFaceTexture(kind){
-  const cnv = document.createElement('canvas');
-  cnv.width = cnv.height = 128;
-  const ctx = cnv.getContext('2d');
-  ctx.fillStyle = 'rgba(0,0,0,0)';
-  ctx.fillRect(0,0,128,128);
-  ctx.fillStyle = kind==='krasue' ? '#8a1a1a' : '#e8e0d0';
-  ctx.beginPath(); ctx.ellipse(64,60,32,40,0,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#000';
-  ctx.beginPath(); ctx.ellipse(48,50,7,10,0,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(80,50,7,10,0,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#3a0000';
-  ctx.beginPath(); ctx.ellipse(64,85,14,7,0,0,Math.PI*2); ctx.fill();
-  return new THREE.CanvasTexture(cnv);
-}
-
-const enemyMats = {
-  pontianak: new THREE.SpriteMaterial({map: makeFaceTexture('pontianak'), color:0xffffff, transparent:true, opacity:0}),
-  krasue: new THREE.SpriteMaterial({map: makeFaceTexture('krasue'), color:0xffffff, transparent:true, opacity:0}),
-  nenek: new THREE.SpriteMaterial({map: makeFaceTexture('nenek'), color:0xccbbaa, transparent:true, opacity:0}),
-};
-
-function spawnEnemy(kind){
-  const ang = Math.random()*Math.PI*2;
-  const dist = 20 + Math.random()*20;
-  const x = player.position.x + Math.cos(ang)*dist;
-  const z = player.position.z + Math.sin(ang)*dist;
-  const y = terrainHeight(x,z) + (kind==='krasue'?1.6:1.2);
-
-  const mat = enemyMats[kind].clone();
-  const sprite = new THREE.Sprite(mat);
-  const scale = kind==='nenek' ? 2.2 : 1.6;
-  sprite.scale.set(scale,scale*1.3,1);
-  sprite.position.set(x,y,z);
-  scene.add(sprite);
-
-  const stats = {
-    pontianak: {hp:30, speed:5.5, dmg:14, uvVuln:1.4, detectRange:16},
-    krasue: {hp:20, speed:3.2, dmg:8, uvVuln:1.8, detectRange:20},
-    nenek: {hp:70, speed:1.6, dmg:22, uvVuln:0.8, detectRange:26},
-  }[kind];
-
-  enemies.push({
-    kind, sprite, mat,
-    hp: stats.hp, maxHp: stats.hp,
-    speed: stats.speed, dmg: stats.dmg,
-    uvVuln: stats.uvVuln, detectRange: stats.detectRange,
-    state: 'lurk', // lurk, hunt, attack, dying
-    lastAttack: 0,
-    bobPhase: Math.random()*10,
-    fadeIn: 0,
-    baseY: y,
-  });
-}
-
-let spawnTimer = 0;
-let killCount = 0;
-
-// ============ INPUT ============
-const keys = {};
-let sprint = false;
-window.addEventListener('keydown', e=>{
-  keys[e.code] = true;
-  if(e.code==='ShiftLeft'||e.code==='ShiftRight') sprint=true;
-  if(e.code==='KeyF') uvHeld = true;
-  if(e.code==='KeyC') aiming = true;
-});
-window.addEventListener('keyup', e=>{
-  keys[e.code] = false;
-  if(e.code==='ShiftLeft'||e.code==='ShiftRight') sprint=false;
-  if(e.code==='KeyF') uvHeld = false;
-  if(e.code==='KeyC') aiming = false;
-});
+let aiming = false;
 
 let uvHeld = false;
-let aiming = false;
-const baseFov = 75, scopeFov = 42;
-let pointerLocked = false;
 
-canvas.addEventListener('click', ()=>{
-  if(!pointerLocked && !isMobile){
-    canvas.requestPointerLock();
-  } else if(pointerLocked){
-    fire();
-  }
-});
-document.addEventListener('pointerlockchange', ()=>{
-  pointerLocked = document.pointerLockElement === canvas;
-});
-document.addEventListener('mousemove', e=>{
-  if(!pointerLocked) return;
-  const sens = aiming ? 0.0009 : 0.0022;
-  yawObj.rotation.y -= e.movementX * sens;
-  pitch -= e.movementY * sens;
-  pitch = Math.max(-1.3, Math.min(1.3, pitch));
-  camera.rotation.x = pitch;
-});
-canvas.addEventListener('contextmenu', e=>e.preventDefault());
-canvas.addEventListener('mousedown', e=>{
-  if(e.button===2){ uvHeld = true; }
-});
-canvas.addEventListener('mouseup', e=>{
-  if(e.button===2){ uvHeld = false; }
-});
+let sprinting = false;
 
-// ============ MOBILE CONTROLS ============
-const isMobile = /Mobi|Android|iPad|iPhone/i.test(navigator.userAgent) || ('ontouchstart' in window);
-let moveVec = {x:0,y:0};
-if(isMobile){
-  document.getElementById('mobileControls').style.display='block';
-  document.getElementById('howto').style.display='none';
-  const joystick = document.getElementById('joystick');
-  const knob = document.getElementById('joystickKnob');
-  let jTouchId = null, jCenter = {x:0,y:0};
-  joystick.addEventListener('touchstart', e=>{
-    e.preventDefault();
-    const t = e.changedTouches[0];
-    jTouchId = t.identifier;
-    const rect = joystick.getBoundingClientRect();
-    jCenter = {x: rect.left+rect.width/2, y: rect.top+rect.height/2};
-  });
-  joystick.addEventListener('touchmove', e=>{
-    e.preventDefault();
-    for(const t of e.changedTouches){
-      if(t.identifier===jTouchId){
-        let dx = t.clientX - jCenter.x, dy = t.clientY - jCenter.y;
-        const len = Math.hypot(dx,dy), max=45, deadzone=8;
-        if(len>max){ dx=dx/len*max; dy=dy/len*max; }
-        knob.style.left = (35+dx)+'px'; knob.style.top=(35+dy)+'px';
-        if(len < deadzone){ moveVec.x = 0; moveVec.y = 0; }
-        else { moveVec.x = dx/max; moveVec.y = dy/max; }
-      }
-    }
-  });
-  function jEnd(e){
-    for(const t of e.changedTouches){
-      if(t.identifier===jTouchId){
-        jTouchId=null; moveVec={x:0,y:0};
-        knob.style.left='35px'; knob.style.top='35px';
-      }
-    }
-  }
-  joystick.addEventListener('touchend', jEnd);
-  joystick.addEventListener('touchcancel', jEnd);
-
-  const lookZone = document.getElementById('lookZone');
-  let lTouchId=null, lastL={x:0,y:0};
-  lookZone.addEventListener('touchstart', e=>{
-    e.preventDefault();
-    const t = e.changedTouches[0];
-    lTouchId = t.identifier; lastL={x:t.clientX,y:t.clientY};
-  });
-  lookZone.addEventListener('touchmove', e=>{
-    e.preventDefault();
-    for(const t of e.changedTouches){
-      if(t.identifier===lTouchId){
-        const dx = t.clientX-lastL.x, dy = t.clientY-lastL.y;
-        const sens = aiming ? 0.0018 : 0.0045;
-        yawObj.rotation.y -= dx*sens;
-        pitch -= dy*sens;
-        pitch = Math.max(-1.3, Math.min(1.3, pitch));
-        camera.rotation.x = pitch;
-        lastL = {x:t.clientX,y:t.clientY};
-      }
-    }
-  });
-  lookZone.addEventListener('touchend', e=>{
-    for(const t of e.changedTouches) if(t.identifier===lTouchId) lTouchId=null;
-  });
-
-  document.getElementById('fireBtn').addEventListener('touchstart', e=>{ e.preventDefault(); fire(); });
-  const uvBtn = document.getElementById('uvBtn');
-  uvBtn.addEventListener('touchstart', e=>{ e.preventDefault(); uvHeld=true; });
-  uvBtn.addEventListener('touchend', e=>{ e.preventDefault(); uvHeld=false; });
-  const scopeBtn = document.getElementById('scopeBtn');
-  scopeBtn.addEventListener('touchstart', e=>{ e.preventDefault(); aiming=true; });
-  scopeBtn.addEventListener('touchend', e=>{ e.preventDefault(); aiming=false; });
-  pointerLocked = true; // mobile doesn't need pointer lock gate
-}
-
-// ============ GAME STATE ============
-let hp = 100, stamina = 100, uvCharge = 100;
 let alive = true;
-let gameStarted = false;
 
-function showMsg(text){
-  const el = document.getElementById('msg');
-  el.textContent = text;
-  el.style.opacity = 1;
-  clearTimeout(showMsg._t);
-  showMsg._t = setTimeout(()=>{ el.style.opacity=0; }, 2500);
+let started = false;
+
+let hp = 100;
+
+let stamina = 100;
+
+let uv = 100;
+
+let kills = 0;
+
+let relics = 0;
+
+let keys = {};
+
+let move = {
+
+  x:0,
+
+  y:0
+
+};
+
+let dodgeTime = 0;
+
+let messageTimer = 0;
+
+let shrineReached = false;
+
+let nagaAwake = false;
+
+let naga = null;
+
+let worldRadius = 145;
+
+const clock = new THREE.Clock();
+
+/* ============================================================
+
+   TERRAIN
+
+   ============================================================ */
+
+function terrainHeight(x,z){
+
+  return (
+
+    Math.sin(x*.032)*2.8 +
+
+    Math.cos(z*.027)*2.3 +
+
+    Math.sin((x+z)*.055)*1.3 +
+
+    Math.sin(x*.11-z*.07)*.45
+
+  );
+
 }
+
+function groundAt(o){
+
+  return terrainHeight(
+
+    o.x,
+
+    o.z
+
+  );
+
+}
+
+/* ============================================================
+
+   MATERIAL HELPERS
+
+   ============================================================ */
+
+function mat(
+
+  color,
+
+  rough=1,
+
+  metal=0
+
+){
+
+  return new THREE.MeshStandardMaterial({
+
+    color,
+
+    roughness:rough,
+
+    metalness:metal
+
+  });
+
+}
+
+const trunkMat =
+
+  mat(0x211812);
+
+const barkMat =
+
+  mat(0x302016);
+
+const leafMat =
+
+  mat(0x0b2817);
+
+const leaf2Mat =
+
+  mat(0x123a20);
+
+const stoneMat =
+
+  mat(0x3d4038,.95);
+
+const mossMat =
+
+  mat(0x254b31);
+
+const goldMat =
+
+  mat(0xb18b42,.55,.35);
+
+const nagaMat =
+
+  mat(0x244e43,.7,.05);
+
+const nagaGlowMat =
+
+  mat(0x68c6b0,.35,.25);
+
+/* ============================================================
+
+   GROUND
+
+   ============================================================ */
+
+function makeGround(){
+
+  const geo =
+
+    new THREE.PlaneGeometry(
+
+      320,
+
+      320,
+
+      160,
+
+      160
+
+    );
+
+  geo.rotateX(-Math.PI/2);
+
+  const p =
+
+    geo.attributes.position;
+
+  for(
+
+    let i=0;
+
+    i<p.count;
+
+    i++
+
+  ){
+
+    p.setY(
+
+      i,
+
+      terrainHeight(
+
+        p.getX(i),
+
+        p.getZ(i)
+
+      )
+
+    );
+
+  }
+
+  geo.computeVertexNormals();
+
+  const m =
+
+    mat(0x182519);
+
+  const g =
+
+    new THREE.Mesh(
+
+      geo,
+
+      m
+
+    );
+
+  g.receiveShadow = true;
+
+  scene.add(g);
+
+}
+
+makeGround();
+
+/* ============================================================
+
+   DISTANT MOUNTAINS
+
+   ============================================================ */
+
+for(let i=0;i<20;i++){
+
+  const a =
+
+    i/20*Math.PI*2 +
+
+    Math.random()*.12;
+
+  const d =
+
+    145 +
+
+    Math.random()*45;
+
+  const h =
+
+    35 +
+
+    Math.random()*55;
+
+  const g =
+
+    new THREE.ConeGeometry(
+
+      18+Math.random()*24,
+
+      h,
+
+      6
+
+    );
+
+  const m =
+
+    mat(0x0b1712);
+
+  const o =
+
+    new THREE.Mesh(
+
+      g,
+
+      m
+
+    );
+
+  o.position.set(
+
+    Math.cos(a)*d,
+
+    h/2-4,
+
+    Math.sin(a)*d
+
+  );
+
+  o.rotation.y =
+
+    Math.random()*6;
+
+  o.castShadow = true;
+
+  scene.add(o);
+
+}
+
+/* ============================================================
+
+   MIST
+
+   ============================================================ */
+
+const mistMat =
+
+  new THREE.MeshBasicMaterial({
+
+    color:0x8aa99a,
+
+    transparent:true,
+
+    opacity:.045,
+
+    depthWrite:false
+
+  });
+
+for(let i=0;i<16;i++){
+
+  const g =
+
+    new THREE.PlaneGeometry(
+
+      100+Math.random()*100,
+
+      18+Math.random()*20
+
+    );
+
+  const o =
+
+    new THREE.Mesh(
+
+      g,
+
+      mistMat.clone()
+
+    );
+
+  o.position.set(
+
+    (Math.random()-.5)*180,
+
+    8+Math.random()*18,
+
+    (Math.random()-.5)*180
+
+  );
+
+  o.rotation.y =
+
+    Math.random()*Math.PI;
+
+  scene.add(o);
+
+}
+
+/* ============================================================
+
+   3D TREES
+
+   ============================================================ */
+
+const obstacles = [];
+
+function makeTree(
+
+  x,
+
+  z,
+
+  ancient=false
+
+){
+
+  const group =
+
+    new THREE.Group();
+
+  const h =
+
+    ancient
+
+      ? 16+Math.random()*10
+
+      : 8+Math.random()*9;
+
+  const r =
+
+    ancient
+
+      ? .75+Math.random()*.45
+
+      : .25+Math.random()*.25;
+
+  const trunk =
+
+    new THREE.Mesh(
+
+      new THREE.CylinderGeometry(
+
+        r*.7,
+
+        r,
+
+        h,
+
+        8
+
+      ),
+
+      ancient
+
+        ? barkMat
+
+        : trunkMat
+
+    );
+
+  trunk.position.y =
+
+    h/2;
+
+  trunk.castShadow =
+
+    true;
+
+  trunk.receiveShadow =
+
+    true;
+
+  group.add(trunk);
+
+  const branchCount =
+
+    ancient ? 5 : 2;
+
+  for(
+
+    let b=0;
+
+    b<branchCount;
+
+    b++
+
+  ){
+
+    const br =
+
+      new THREE.Mesh(
+
+        new THREE.CylinderGeometry(
+
+          r*.18,
+
+          r*.28,
+
+          3+Math.random()*3,
+
+          6
+
+        ),
+
+        barkMat
+
+      );
+
+    br.position.set(
+
+      (Math.random()-.5)*1.5,
+
+      h*.55+Math.random()*h*.3,
+
+      (Math.random()-.5)*1.5
+
+    );
+
+    br.rotation.z =
+
+      (Math.random()-.5)*1.2;
+
+    br.rotation.x =
+
+      (Math.random()-.5)*1.0;
+
+    group.add(br);
+
+  }
+
+  const leaves =
+
+    ancient ? 9 : 5;
+
+  for(
+
+    let i=0;
+
+    i<leaves;
+
+    i++
+
+  ){
+
+    const lr =
+
+      ancient
+
+        ? 3+Math.random()*2.5
+
+        : 1.5+Math.random()*1.3;
+
+    const lg =
+
+      new THREE.Mesh(
+
+        new THREE.IcosahedronGeometry(
+
+          lr,
+
+          1
+
+        ),
+
+        i%3
+
+          ? leafMat
+
+          : leaf2Mat
+
+      );
+
+    lg.position.set(
+
+      (Math.random()-.5)*4,
+
+      h*.65+Math.random()*h*.38,
+
+      (Math.random()-.5)*4
+
+    );
+
+    lg.scale.y =
+
+      .55;
+
+    lg.castShadow =
+
+      true;
+
+    group.add(lg);
+
+  }
+
+  group.position.set(
+
+    x,
+
+    terrainHeight(x,z),
+
+    z
+
+  );
+
+  scene.add(group);
+
+  obstacles.push({
+
+    x,
+
+    z,
+
+    r:ancient?1.4:.65
+
+  });
+
+}
+
+/* ============================================================
+
+   LARGE FOREST
+
+   ============================================================ */
+
+for(let i=0;i<330;i++){
+
+  const a =
+
+    Math.random()*Math.PI*2;
+
+  const d =
+
+    12+Math.random()*125;
+
+  const x =
+
+    Math.cos(a)*d;
+
+  const z =
+
+    Math.sin(a)*d;
+
+  /*
+
+     Leave a large central route open.
+
+  */
+
+  if(
+
+    Math.abs(x)<8 &&
+
+    z<45 &&
+
+    z>-110
+
+  ){
+
+    continue;
+
+  }
+
+  makeTree(
+
+    x,
+
+    z,
+
+    Math.random()<.08
+
+  );
+
+}
+
+/* ============================================================
+
+   TEMPLE PILLARS
+
+   ============================================================ */
+
+function pillar(
+
+  x,
+
+  z,
+
+  h=5
+
+){
+
+  const o =
+
+    new THREE.Mesh(
+
+      new THREE.BoxGeometry(
+
+        1.1,
+
+        h,
+
+        1.1
+
+      ),
+
+      stoneMat
+
+    );
+
+  o.position.set(
+
+    x,
+
+    terrainHeight(x,z)+h/2,
+
+    z
+
+  );
+
+  o.rotation.y =
+
+    Math.random()*.3;
+
+  o.castShadow =
+
+    true;
+
+  o.receiveShadow =
+
+    true;
+
+  scene.add(o);
+
+}
+
+for(let i=0;i<14;i++){
+
+  const a =
+
+    i/14*Math.PI*2;
+
+  const d = 19;
+
+  pillar(
+
+    Math.cos(a)*d,
+
+    Math.sin(a)*d,
+
+    4+Math.random()*3
+
+  );
+
+}
+
+/* ============================================================
+
+   TEMPLE PLATFORM
+
+   ============================================================ */
+
+const platform =
+
+  new THREE.Mesh(
+
+    new THREE.CylinderGeometry(
+
+      15,
+
+      17,
+
+      1.2,
+
+      10
+
+    ),
+
+    stoneMat
+
+  );
+
+platform.position.set(
+
+  0,
+
+  terrainHeight(0,0)+.3,
+
+  0
+
+);
+
+platform.castShadow =
+
+  true;
+
+platform.receiveShadow =
+
+  true;
+
+scene.add(platform);
+
+/* ============================================================
+
+   GRAND NAGA TEMPLE
+
+   ============================================================ */
+
+const temple =
+
+  new THREE.Group();
+
+scene.add(temple);
+
+temple.position.y =
+
+  terrainHeight(0,0)+1;
+
+for(let i=0;i<5;i++){
+
+  const w =
+
+    6-i*.7;
+
+  const h =
+
+    5+i*2.5;
+
+  const b =
+
+    new THREE.Mesh(
+
+      new THREE.BoxGeometry(
+
+        w,
+
+        h,
+
+        w
+
+      ),
+
+      stoneMat
+
+    );
+
+  b.position.y =
+
+    h/2;
+
+  b.castShadow =
+
+    true;
+
+  b.receiveShadow =
+
+    true;
+
+  temple.add(b);
+
+}
+
+const roof =
+
+  new THREE.Mesh(
+
+    new THREE.ConeGeometry(
+
+      8,
+
+      9,
+
+      8
+
+    ),
+
+    stoneMat
+
+  );
+
+roof.position.y =
+
+  17;
+
+roof.castShadow =
+
+  true;
+
+temple.add(roof);
+
+for(let i=0;i<4;i++){
+
+  const tor =
+
+    new THREE.Mesh(
+
+      new THREE.TorusGeometry(
+
+        5+i*.8,
+
+        .35,
+
+        8,
+
+        32,
+
+        Math.PI*1.7
+
+      ),
+
+      goldMat
+
+    );
+
+  tor.rotation.x =
+
+    Math.PI/2;
+
+  tor.position.y =
+
+    7+i*2.1;
+
+  temple.add(tor);
+
+}
+
+const shrineGlow =
+
+  new THREE.PointLight(
+
+    0x65d7bf,
+
+    2.2,
+
+    28
+
+  );
+
+shrineGlow.position.set(
+
+  0,
+
+  12,
+
+  0
+
+);
+
+temple.add(shrineGlow);
+
+/* ============================================================
+
+   LAKE
+
+   ============================================================ */
+
+const waterMat =
+
+  new THREE.MeshStandardMaterial({
+
+    color:0x1d6170,
+
+    roughness:.15,
+
+    metalness:.15,
+
+    transparent:true,
+
+    opacity:.72
+
+  });
+
+const lake =
+
+  new THREE.Mesh(
+
+    new THREE.CircleGeometry(
+
+      22,
+
+      48
+
+    ),
+
+    waterMat
+
+  );
+
+lake.rotation.x =
+
+  -Math.PI/2;
+
+lake.position.set(
+
+  45,
+
+  terrainHeight(45,20)+.15,
+
+  20
+
+);
+
+scene.add(lake);
+
+/* ============================================================
+
+   WATERFALL
+
+   ============================================================ */
+
+for(let i=0;i<5;i++){
+
+  const wh =
+
+    8+Math.random()*9;
+
+  const ww =
+
+    3+Math.random()*2;
+
+  const w =
+
+    new THREE.Mesh(
+
+      new THREE.PlaneGeometry(
+
+        ww,
+
+        wh
+
+      ),
+
+      new THREE.MeshBasicMaterial({
+
+        color:0x8ed8df,
+
+        transparent:true,
+
+        opacity:.45,
+
+        side:THREE.DoubleSide
+
+      })
+
+    );
+
+  w.position.set(
+
+    45+(-10+i*5),
+
+    terrainHeight(
+
+      45+(-10+i*5),
+
+      -1
+
+    )+wh/2,
+
+    0
+
+  );
+
+  scene.add(w);
+
+}
+
+/* ============================================================
+
+   RUNE STONES
+
+   ============================================================ */
+
+for(let i=0;i<12;i++){
+
+  const z =
+
+    82-i*7;
+
+  const s =
+
+    new THREE.Mesh(
+
+      new THREE.BoxGeometry(
+
+        1.3,
+
+        2.2,
+
+        1.0
+
+      ),
+
+      stoneMat
+
+    );
+
+  s.position.set(
+
+    (Math.random()-.5)*4,
+
+    terrainHeight(0,z)+1.1,
+
+    z
+
+  );
+
+  s.rotation.z =
+
+    (Math.random()-.5)*.18;
+
+  scene.add(s);
+
+}
+
+/* ============================================================
+
+   LIGHTING
+
+   ============================================================ */
+
+const hemi =
+
+  new THREE.HemisphereLight(
+
+    0x5f806f,
+
+    0x050806,
+
+    .7
+
+  );
+
+scene.add(hemi);
+
+const moon =
+
+  new THREE.DirectionalLight(
+
+    0x9ab6dd,
+
+    1.05
+
+  );
+
+moon.position.set(
+
+  -55,
+
+  80,
+
+  35
+
+);
+
+moon.castShadow =
+
+  true;
+
+moon.shadow.mapSize.set(
+
+  1536,
+
+  1536
+
+);
+
+moon.shadow.camera.near =
+
+  5;
+
+moon.shadow.camera.far =
+
+  260;
+
+moon.shadow.camera.left =
+
+  -100;
+
+moon.shadow.camera.right =
+
+  100;
+
+moon.shadow.camera.top =
+
+  100;
+
+moon.shadow.camera.bottom =
+
+  -100;
+
+scene.add(moon);
+
+const fire =
+
+  new THREE.PointLight(
+
+    0xd17b3c,
+
+    1.4,
+
+    22
+
+  );
+
+fire.position.set(
+
+  0,
+
+  4,
+
+  0
+
+);
+
+scene.add(fire);
+
+const hand =
+
+  new THREE.PointLight(
+
+    0x31504a,
+
+    .28,
+
+    7
+
+  );
+
+camera.add(hand);
+
+hand.position.set(
+
+  0,
+
+  -.3,
+
+  .5
+
+);
+
+/* ============================================================
+
+   UV TORCH
+
+   ============================================================ */
+
+const uvLight =
+
+  new THREE.SpotLight(
+
+    0xb8ddff,
+
+    0,
+
+    30,
+
+    Math.PI/8,
+
+    .42,
+
+    1.7
+
+  );
+
+camera.add(uvLight);
+
+const uvTarget =
+
+  new THREE.Object3D();
+
+uvTarget.position.set(
+
+  0,
+
+  0,
+
+  -1
+
+);
+
+camera.add(
+
+  uvTarget
+
+);
+
+uvLight.target =
+
+  uvTarget;
+
+/* ============================================================
+
+   PARTICLES / FIREFLIES
+
+   ============================================================ */
+
+const pg =
+
+  new THREE.BufferGeometry();
+
+const pc =
+
+  450;
+
+const pa =
+
+  new Float32Array(
+
+    pc*3
+
+  );
+
+for(let i=0;i<pc;i++){
+
+  pa[i*3] =
+
+    (Math.random()-.5)*260;
+
+  pa[i*3+1] =
+
+    Math.random()*22+.2;
+
+  pa[i*3+2] =
+
+    (Math.random()-.5)*260;
+
+}
+
+pg.setAttribute(
+
+  "position",
+
+  new THREE.BufferAttribute(
+
+    pa,
+
+    3
+
+  )
+
+);
+
+const particles =
+
+  new THREE.Points(
+
+    pg,
+
+    new THREE.PointsMaterial({
+
+      color:0xa8d9b0,
+
+      size:.075,
+
+      transparent:true,
+
+      opacity:.55
+
+    })
+
+  );
+
+scene.add(particles);
+
+/* ============================================================
+
+   ANCIENT NAGA
+
+   ============================================================ */
+
+function makeNaga(){
+
+  const g =
+
+    new THREE.Group();
+
+  /*
+
+     Long segmented body.
+
+  */
+
+  for(let i=0;i<13;i++){
+
+    const seg =
+
+      new THREE.Mesh(
+
+        new THREE.SphereGeometry(
+
+          1.5-i*.055,
+
+          16,
+
+          10
+
+        ),
+
+        nagaMat
+
+      );
+
+    const a =
+
+      i*.48;
+
+    seg.position.set(
+
+      Math.sin(a)*3.2,
+
+      1.2+i*.18,
+
+      Math.cos(a)*3.2
+
+    );
+
+    seg.scale.set(
+
+      1.2,
+
+      1,
+
+      1.2
+
+    );
+
+    seg.castShadow =
+
+      true;
+
+    g.add(seg);
+
+  }
+
+  /*
+
+     Neck
+
+  */
+
+  const neck =
+
+    new THREE.Mesh(
+
+      new THREE.CylinderGeometry(
+
+        1.55,
+
+        2.0,
+
+        6,
+
+        14
+
+      ),
+
+      nagaMat
+
+    );
+
+  neck.position.y =
+
+    5;
+
+  neck.rotation.z =
+
+    -.12;
+
+  neck.castShadow =
+
+    true;
+
+  g.add(neck);
+
+  /*
+
+     Head
+
+  */
+
+  const head =
+
+    new THREE.Mesh(
+
+      new THREE.SphereGeometry(
+
+        2.0,
+
+        18,
+
+        14
+
+      ),
+
+      nagaMat
+
+    );
+
+  head.position.set(
+
+    0,
+
+    8,
+
+    0
+
+  );
+
+  head.scale.set(
+
+    1.2,
+
+    .9,
+
+    1.35
+
+  );
+
+  head.castShadow =
+
+    true;
+
+  g.add(head);
+
+  /*
+
+     Eyes
+
+  */
+
+  const eyeMat =
+
+    new THREE.MeshBasicMaterial({
+
+      color:0x9cf6cf
+
+    });
+
+  [-.55,.55].forEach(
+
+    x => {
+
+      const e =
+
+        new THREE.Mesh(
+
+          new THREE.SphereGeometry(
+
+            .13,
+
+            8,
+
+            8
+
+          ),
+
+          eyeMat
+
+        );
+
+      e.position.set(
+
+        x,
+
+        8.35,
+
+        -1.65
+
+      );
+
+      g.add(e);
+
+    }
+
+  );
+
+  /*
+
+     Crown / fins
+
+  */
+
+  for(let i=0;i<5;i++){
+
+    const fin =
+
+      new THREE.Mesh(
+
+        new THREE.ConeGeometry(
+
+          1.0,
+
+          .45,
+
+          5
+
+        ),
+
+        nagaMat
+
+      );
+
+    fin.position.set(
+
+      (i-2)*.75,
+
+      8.5-i*.15,
+
+      -.1
+
+    );
+
+    fin.rotation.z =
+
+      (i-2)*.25;
+
+    g.add(fin);
+
+  }
+
+  /*
+
+     Naga aura.
+
+  */
+
+  const aura =
+
+    new THREE.PointLight(
+
+      0x5ce1bf,
+
+      2.4,
+
+      26
+
+    );
+
+  aura.position.set(
+
+    0,
+
+    7,
+
+    0
+
+  );
+
+  g.add(aura);
+
+  g.visible =
+
+    false;
+
+  scene.add(g);
+
+  return {
+
+    group:g,
+
+    hp:600,
+
+    maxHp:600,
+
+    lastAttack:0,
+
+    phase:0
+
+  };
+
+}
+
+naga =
+
+  makeNaga();
+
+/* ============================================================
+
+   SPIRIT ENEMIES
+
+   ============================================================ */
+
+const enemies = [];
+
+function makeSpirit(kind){
+
+  const g =
+
+    new THREE.Group();
+
+  const body =
+
+    new THREE.Mesh(
+
+      new THREE.SphereGeometry(
+
+        kind==="hunter"
+
+          ? 1.0
+
+          : .75,
+
+        12,
+
+        10
+
+      ),
+
+      mat(
+
+        kind==="hunter"
+
+          ? 0x6d3030
+
+          : 0xd4cbbd
+
+      )
+
+    );
+
+  body.scale.y =
+
+    1.45;
+
+  body.castShadow =
+
+    true;
+
+  g.add(body);
+
+  const eyeM =
+
+    new THREE.MeshBasicMaterial({
+
+      color:0xff5b45
+
+    });
+
+  for(
+
+    const x of [-.25,.25]
+
+  ){
+
+    const e =
+
+      new THREE.Mesh(
+
+        new THREE.SphereGeometry(
+
+          .1,
+
+          6,
+
+          6
+
+        ),
+
+        eyeM
+
+      );
+
+    e.position.set(
+
+      x,
+
+      .25,
+
+      -.68
+
+    );
+
+    g.add(e);
+
+  }
+
+  return g;
+
+}
+
+function spawnSpirit(){
+
+  const a =
+
+    Math.random()*Math.PI*2;
+
+  const d =
+
+    22+Math.random()*35;
+
+  const x =
+
+    player.position.x +
+
+    Math.cos(a)*d;
+
+  const z =
+
+    player.position.z +
+
+    Math.sin(a)*d;
+
+  const kind =
+
+    Math.random()<.35
+
+      ? "hunter"
+
+      : "spirit";
+
+  const g =
+
+    makeSpirit(kind);
+
+  g.position.set(
+
+    x,
+
+    terrainHeight(x,z)+1.3,
+
+    z
+
+  );
+
+  scene.add(g);
+
+  enemies.push({
+
+    g,
+
+    kind,
+
+    hp:
+
+      kind==="hunter"
+
+        ? 55
+
+        : 35,
+
+    speed:
+
+      kind==="hunter"
+
+        ? 3.7
+
+        : 2.4,
+
+    last:0,
+
+    phase:Math.random()*10
+
+  });
+
+}
+
+for(let i=0;i<5;i++){
+
+  spawnSpirit();
+
+}
+
+/* ============================================================
+
+   INPUT
+
+   ============================================================ */
+
+window.addEventListener(
+
+  "keydown",
+
+  e => {
+
+    keys[e.code] =
+
+      true;
+
+    if(
+
+      e.code==="KeyC"
+
+    ){
+
+      aiming=true;
+
+    }
+
+    if(
+
+      e.code==="KeyF"
+
+    ){
+
+      uvHeld=true;
+
+    }
+
+    if(
+
+      e.code==="Space"
+
+    ){
+
+      e.preventDefault();
+
+      dodge();
+
+    }
+
+  }
+
+);
+
+window.addEventListener(
+
+  "keyup",
+
+  e => {
+
+    keys[e.code] =
+
+      false;
+
+    if(
+
+      e.code==="KeyC"
+
+    ){
+
+      aiming=false;
+
+    }
+
+    if(
+
+      e.code==="KeyF"
+
+    ){
+
+      uvHeld=false;
+
+    }
+
+  }
+
+);
+
+canvas.addEventListener(
+
+  "contextmenu",
+
+  e => e.preventDefault()
+
+);
+
+canvas.addEventListener(
+
+  "mousedown",
+
+  e => {
+
+    if(!started)
+
+      return;
+
+    if(e.button===2)
+
+      uvHeld=true;
+
+    if(e.button===0){
+
+      if(
+
+        document.pointerLockElement!==canvas &&
+
+        !isMobile
+
+      ){
+
+        canvas.requestPointerLock();
+
+      }else{
+
+        fire();
+
+      }
+
+    }
+
+  }
+
+);
+
+window.addEventListener(
+
+  "mouseup",
+
+  e => {
+
+    if(e.button===2)
+
+      uvHeld=false;
+
+  }
+
+);
+
+document.addEventListener(
+
+  "mousemove",
+
+  e => {
+
+    if(
+
+      document.pointerLockElement!==canvas
+
+    )
+
+      return;
+
+    const s =
+
+      aiming
+
+        ? .0010
+
+        : .0025;
+
+    yaw -=
+
+      e.movementX*s;
+
+    pitch -=
+
+      e.movementY*s;
+
+    pitch =
+
+      Math.max(
+
+        -1.25,
+
+        Math.min(
+
+          1.25,
+
+          pitch
+
+        )
+
+      );
+
+    player.rotation.y =
+
+      yaw;
+
+    camera.rotation.x =
+
+      pitch;
+
+  }
+
+);
+
+/* ============================================================
+
+   DODGE
+
+   ============================================================ */
+
+function dodge(){
+
+  if(
+
+    stamina<25 ||
+
+    dodgeTime>0 ||
+
+    !alive
+
+  )
+
+    return;
+
+  stamina -= 25;
+
+  dodgeTime =
+
+    .38;
+
+}
+
+/* ============================================================
+
+   MOBILE
+
+   ============================================================ */
+
+if(isMobile){
+
+  const joy =
+
+    $("joy");
+
+  const knob =
+
+    $("knob");
+
+  let jid =
+
+    null;
+
+  let cx=0;
+
+  let cy=0;
+
+  joy.addEventListener(
+
+    "touchstart",
+
+    e => {
+
+      e.preventDefault();
+
+      const t =
+
+        e.changedTouches[0];
+
+      jid =
+
+        t.identifier;
+
+      const r =
+
+        joy.getBoundingClientRect();
+
+      cx =
+
+        r.left+r.width/2;
+
+      cy =
+
+        r.top+r.height/2;
+
+    },
+
+    {passive:false}
+
+  );
+
+  joy.addEventListener(
+
+    "touchmove",
+
+    e => {
+
+      e.preventDefault();
+
+      for(
+
+        const t of e.changedTouches
+
+      ){
+
+        if(
+
+          t.identifier!==jid
+
+        )
+
+          continue;
+
+        let dx =
+
+          t.clientX-cx;
+
+        let dy =
+
+          t.clientY-cy;
+
+        let l =
+
+          Math.hypot(dx,dy);
+
+        const m =
+
+          45;
+
+        if(l>m){
+
+          dx =
+
+            dx/l*m;
+
+          dy =
+
+            dy/l*m;
+
+        }
+
+        knob.style.left =
+
+          37+dx+"px";
+
+        knob.style.top =
+
+          37+dy+"px";
+
+        move.x =
+
+          dx/m;
+
+        move.y =
+
+          dy/m;
+
+      }
+
+    },
+
+    {passive:false}
+
+  );
+
+  const end =
+
+    e => {
+
+      for(
+
+        const t of e.changedTouches
+
+      ){
+
+        if(
+
+          t.identifier===jid
+
+        ){
+
+          jid=null;
+
+          move.x=0;
+
+          move.y=0;
+
+          knob.style.left =
+
+            "37px";
+
+          knob.style.top =
+
+            "37px";
+
+        }
+
+      }
+
+    };
+
+  joy.addEventListener(
+
+    "touchend",
+
+    end
+
+  );
+
+  joy.addEventListener(
+
+    "touchcancel",
+
+    end
+
+  );
+
+  let lid=null;
+
+  let lx=0;
+
+  let ly=0;
+
+  canvas.addEventListener(
+
+    "touchstart",
+
+    e => {
+
+      if(
+
+        e.target.closest &&
+
+        e.target.closest(".btn")
+
+      )
+
+        return;
+
+      const t =
+
+        e.changedTouches[0];
+
+      lid =
+
+        t.identifier;
+
+      lx =
+
+        t.clientX;
+
+      ly =
+
+        t.clientY;
+
+    },
+
+    {passive:false}
+
+  );
+
+  canvas.addEventListener(
+
+    "touchmove",
+
+    e => {
+
+      if(lid===null)
+
+        return;
+
+      e.preventDefault();
+
+      for(
+
+        const t of e.changedTouches
+
+      ){
+
+        if(
+
+          t.identifier!==lid
+
+        )
+
+          continue;
+
+        yaw -=
+
+          (t.clientX-lx)*.004;
+
+        pitch -=
+
+          (t.clientY-ly)*.004;
+
+        pitch =
+
+          Math.max(
+
+            -1.25,
+
+            Math.min(
+
+              1.25,
+
+              pitch
+
+            )
+
+          );
+
+        player.rotation.y =
+
+          yaw;
+
+        camera.rotation.x =
+
+          pitch;
+
+        lx =
+
+          t.clientX;
+
+        ly =
+
+          t.clientY;
+
+      }
+
+    },
+
+    {passive:false}
+
+  );
+
+  canvas.addEventListener(
+
+    "touchend",
+
+    e => {
+
+      for(
+
+        const t of e.changedTouches
+
+      ){
+
+        if(
+
+          t.identifier===lid
+
+        )
+
+          lid=null;
+
+      }
+
+    }
+
+  );
+
+  $("fire").addEventListener(
+
+    "touchstart",
+
+    e => {
+
+      e.preventDefault();
+
+      fire();
+
+    }
+
+  );
+
+  $("uvb").addEventListener(
+
+    "touchstart",
+
+    e => {
+
+      e.preventDefault();
+
+      uvHeld=true;
+
+    }
+
+  );
+
+  $("uvb").addEventListener(
+
+    "touchend",
+
+    e => {
+
+      e.preventDefault();
+
+      uvHeld=false;
+
+    }
+
+  );
+
+  $("aim").addEventListener(
+
+    "touchstart",
+
+    e => {
+
+      e.preventDefault();
+
+      aiming=true;
+
+    }
+
+  );
+
+  $("aim").addEventListener(
+
+    "touchend",
+
+    e => {
+
+      e.preventDefault();
+
+      aiming=false;
+
+    }
+
+  );
+
+  $("sprint").addEventListener(
+
+    "touchstart",
+
+    e => {
+
+      e.preventDefault();
+
+      sprinting=true;
+
+    }
+
+  );
+
+  $("sprint").addEventListener(
+
+    "touchend",
+
+    e => {
+
+      e.preventDefault();
+
+      sprinting=false;
+
+    }
+
+  );
+
+}
+
+/* ============================================================
+
+   MESSAGE
+
+   ============================================================ */
+
+function showMsg(s){
+
+  $("msg").textContent =
+
+    s;
+
+  $("msg").style.opacity =
+
+    1;
+
+  clearTimeout(
+
+    messageTimer
+
+  );
+
+  messageTimer =
+
+    setTimeout(
+
+      () => {
+
+        $("msg").style.opacity=0;
+
+      },
+
+      2800
+
+    );
+
+}
+
+/* ============================================================
+
+   FIRE
+
+   ============================================================ */
 
 function fire(){
-  if(!alive || !gameStarted) return;
-  sfxShoot();
-  // raycast from camera center
-  const raycaster = new THREE.Raycaster();
-  const dir = new THREE.Vector3();
-  camera.getWorldDirection(dir);
-  const origin = new THREE.Vector3();
-  camera.getWorldPosition(origin);
-  raycaster.set(origin, dir);
-  raycaster.far = 40;
 
-  let closest = null, closestDist = Infinity;
-  for(const en of enemies){
-    if(en.state==='dying') continue;
-    const d = en.sprite.position.distanceTo(origin);
-    if(d > 40) continue;
-    // approximate hit test: angular distance
-    const toEnemy = en.sprite.position.clone().sub(origin).normalize();
-    const angle = dir.angleTo(toEnemy);
-    const hitRadius = 0.09 + (1/d)*0.5;
-    if(angle < hitRadius && d < closestDist){
-      closest = en; closestDist = d;
-    }
+  if(
+
+    !started ||
+
+    !alive ||
+
+    dodgeTime>0
+
+  )
+
+    return;
+
+  const origin =
+
+    new THREE.Vector3();
+
+  const dir =
+
+    new THREE.Vector3();
+
+  camera.getWorldPosition(
+
+    origin
+
+  );
+
+  camera.getWorldDirection(
+
+    dir
+
+  );
+
+  let best =
+
+    null;
+
+  let bd =
+
+    Infinity;
+
+  const targets =
+
+    [...enemies];
+
+  if(nagaAwake){
+
+    targets.push({
+
+      g:naga.group,
+
+      hp:naga.hp,
+
+      isNaga:true
+
+    });
+
   }
-  if(closest){
-    const uvBonus = (uvHeld && uvLight.intensity>0) ? closest.uvVuln : 1;
-    closest.hp -= 22 * uvBonus;
-    sfxHit();
-    flashHitMarker();
-    if(closest.hp <= 0){
-      killEnemy(closest);
+
+  for(
+
+    const e of targets
+
+  ){
+
+    if(
+
+      e.g &&
+
+      !e.g.visible
+
+    )
+
+      continue;
+
+    const pos =
+
+      e.isNaga
+
+        ? naga.group.position
+
+        : e.g.position;
+
+    const d =
+
+      pos.distanceTo(
+
+        origin
+
+      );
+
+    if(d>55)
+
+      continue;
+
+    const to =
+
+      pos.clone()
+
+      .sub(origin)
+
+      .normalize();
+
+    const ang =
+
+      dir.angleTo(to);
+
+    const radius =
+
+      e.isNaga
+
+        ? .15
+
+        : .12;
+
+    if(
+
+      ang <
+
+      radius+(1/d)*.8 &&
+
+      d<bd
+
+    ){
+
+      best=e;
+
+      bd=d;
+
     }
+
   }
-}
 
-const crosshairEl = document.getElementById('crosshair');
-function flashHitMarker(){
-  crosshairEl.style.background = '#ff8080';
-  crosshairEl.style.transform = 'translate(-50%,-50%) scale(2)';
-  setTimeout(()=>{
-    crosshairEl.style.background = 'rgba(212,197,163,0.5)';
-    crosshairEl.style.transform = 'translate(-50%,-50%) scale(1)';
-  }, 120);
-}
+  if(!best)
 
-function killEnemy(en){
-  en.state = 'dying';
-  killCount++;
-  sfxScream();
-  const fadeOut = setInterval(()=>{
-    en.mat.opacity -= 0.08;
-    en.sprite.position.y -= 0.02;
-    if(en.mat.opacity <= 0){
-      clearInterval(fadeOut);
-      scene.remove(en.sprite);
-      const idx = enemies.indexOf(en);
-      if(idx>=0) enemies.splice(idx,1);
+    return;
+
+  const damage =
+
+    (uvHeld?34:22) *
+
+    (
+
+      best.isNaga
+
+        ? (uvHeld?1.35:.55)
+
+        : 1
+
+    );
+
+  best.hp -=
+
+    damage;
+
+  if(best.isNaga){
+
+    naga.hp =
+
+      best.hp;
+
+  }
+
+  if(
+
+    best.hp<=0
+
+  ){
+
+    if(best.isNaga){
+
+      showMsg(
+
+        "THE NAGA RETURNS TO THE DEEP"
+
+      );
+
+      naga.group.visible =
+
+        false;
+
+      $("boss").style.display =
+
+        "none";
+
+      $("objective").textContent =
+
+        "Escape the Naga valley";
+
+      nagaAwake=false;
+
+    }else{
+
+      scene.remove(
+
+        best.g
+
+      );
+
+      enemies.splice(
+
+        enemies.indexOf(best),
+
+        1
+
+      );
+
+      kills++;
+
+      if(
+
+        kills%3===0
+
+      ){
+
+        showMsg(
+
+          kills+
+
+          " spirits banished"
+
+        );
+
+      }
+
     }
-  }, 40);
-  if(killCount % 5 === 0){
-    showMsg(`${killCount} spirits banished`);
+
   }
+
 }
 
-let shakeTime = 0, shakeMag = 0;
-function triggerShake(mag, dur){
-  shakeMag = Math.max(shakeMag, mag);
-  shakeTime = Math.max(shakeTime, dur);
-}
+/* ============================================================
 
-function damagePlayer(amount){
-  hp -= amount;
-  sfxDamage();
-  triggerShake(0.18, 0.35);
-  const flash = document.getElementById('damageFlash');
-  flash.style.opacity = 0.5;
-  setTimeout(()=>{ flash.style.opacity=0; }, 200);
-  if(hp <= 0 && alive){
+   DAMAGE
+
+   ============================================================ */
+
+function damage(amount){
+
+  if(dodgeTime>0)
+
+    return;
+
+  hp -=
+
+    amount;
+
+  $("damage").style.opacity =
+
+    .7;
+
+  setTimeout(
+
+    () => {
+
+      $("damage").style.opacity=0;
+
+    },
+
+    130
+
+  );
+
+  if(hp<=0)
+
     die();
-  }
+
 }
 
 function die(){
-  alive = false;
-  document.exitPointerLock && document.exitPointerLock();
-  document.getElementById('deathScreen').style.display = 'flex';
+
+  alive=false;
+
+  if(
+
+    document.pointerLockElement
+
+  ){
+
+    document.exitPointerLock();
+
+  }
+
+  $("death").style.display =
+
+    "flex";
+
 }
 
-function resetGame(){
-  hp = 100; stamina = 100; uvCharge = 100;
-  alive = true;
-  killCount = 0;
-  aiming = false;
-  shakeTime = 0; shakeMag = 0;
-  camera.position.set(0,0,0);
-  camera.fov = baseFov;
+/* ============================================================
+
+   RESET
+
+   ============================================================ */
+
+function reset(){
+
+  hp=100;
+
+  stamina=100;
+
+  uv=100;
+
+  alive=true;
+
+  kills=0;
+
+  relics=0;
+
+  shrineReached=false;
+
+  nagaAwake=false;
+
+  naga.hp =
+
+    naga.maxHp;
+
+  naga.group.visible =
+
+    false;
+
+  enemies.forEach(
+
+    e => scene.remove(e.g)
+
+  );
+
+  enemies.length=0;
+
+  for(let i=0;i<5;i++)
+
+    spawnSpirit();
+
+  player.position.set(
+
+    0,
+
+    terrainHeight(0,105)+1.7,
+
+    105
+
+  );
+
+  yaw=0;
+
+  pitch=0;
+
+  player.rotation.y=0;
+
+  camera.rotation.x=0;
+
+  $("death").style.display =
+
+    "none";
+
+  $("boss").style.display =
+
+    "none";
+
+  $("objective").textContent =
+
+    "Find the ancient Naga shrine";
+
+  showMsg(
+
+    "The jungle stirs again..."
+
+  );
+
+}
+
+$("restart").onclick =
+
+  reset;
+
+/* ============================================================
+
+   START GAME
+
+   ============================================================ */
+
+$("start").onclick =
+
+  () => {
+
+    $("title").style.display =
+
+      "none";
+
+    started=true;
+
+    if(!isMobile){
+
+      canvas.requestPointerLock();
+
+    }
+
+    showMsg(
+
+      "Nagaloka awakens..."
+
+    );
+
+  };
+
+/* ============================================================
+
+   GAME UPDATE
+
+   ============================================================ */
+
+function update(dt,t){
+
+  if(
+
+    !started ||
+
+    !alive
+
+  )
+
+    return;
+
+  if(dodgeTime>0)
+
+    dodgeTime -= dt;
+
+  let mx =
+
+    isMobile
+
+      ? move.x
+
+      : (
+
+        (keys.KeyD?1:0) -
+
+        (keys.KeyA?1:0)
+
+      );
+
+  let mz =
+
+    isMobile
+
+      ? move.y
+
+      : (
+
+        (keys.KeyS?1:0) -
+
+        (keys.KeyW?1:0)
+
+      );
+
+  const moving =
+
+    mx*mx+mz*mz>.01;
+
+  if(
+
+    !isMobile
+
+  ){
+
+    sprinting =
+
+      (
+
+        (keys.ShiftLeft ||
+
+         keys.ShiftRight) &&
+
+        moving
+
+      );
+
+  }
+
+  if(stamina<=2)
+
+    sprinting=false;
+
+  /* ==========================================================
+
+     PLAYER MOVEMENT
+
+     ========================================================== */
+
+  if(moving){
+
+    const l =
+
+      Math.hypot(
+
+        mx,
+
+        mz
+
+      );
+
+    mx/=l;
+
+    mz/=l;
+
+    const f =
+
+      new THREE.Vector3(
+
+        0,
+
+        0,
+
+        -1
+
+      )
+
+      .applyQuaternion(
+
+        player.quaternion
+
+      );
+
+    f.y=0;
+
+    const r =
+
+      new THREE.Vector3(
+
+        1,
+
+        0,
+
+        0
+
+      )
+
+      .applyQuaternion(
+
+        player.quaternion
+
+      );
+
+    r.y=0;
+
+    const d =
+
+      f
+
+      .multiplyScalar(-mz)
+
+      .add(
+
+        r.multiplyScalar(mx)
+
+      )
+
+      .normalize();
+
+    const speed =
+
+      (
+
+        sprinting
+
+          ? 8.0
+
+          : 4.2
+
+      )
+
+      *
+
+      (
+
+        dodgeTime>0
+
+          ? 2.2
+
+          : 1
+
+      )
+
+      *
+
+      dt;
+
+    const nx =
+
+      player.position.x+
+
+      d.x*speed;
+
+    const nz =
+
+      player.position.z+
+
+      d.z*speed;
+
+    let blocked=false;
+
+    for(
+
+      const o of obstacles
+
+    ){
+
+      const dx =
+
+        nx-o.x;
+
+      const dz =
+
+        nz-o.z;
+
+      if(
+
+        dx*dx+dz*dz
+
+        <
+
+        (o.r+.65)**2
+
+      ){
+
+        blocked=true;
+
+        break;
+
+      }
+
+    }
+
+    if(!blocked){
+
+      player.position.x =
+
+        nx;
+
+      player.position.z =
+
+        nz;
+
+    }
+
+  }
+
+  player.position.y =
+
+    terrainHeight(
+
+      player.position.x,
+
+      player.position.z
+
+    )
+
+    +
+
+    1.7
+
+    +
+
+    Math.sin(t*10)*
+
+    (
+
+      moving
+
+        ? .025
+
+        : 0
+
+    );
+
+  if(sprinting){
+
+    stamina =
+
+      Math.max(
+
+        0,
+
+        stamina-dt*26
+
+      );
+
+  }else{
+
+    stamina =
+
+      Math.min(
+
+        100,
+
+        stamina+dt*15
+
+      );
+
+  }
+
+  /* ==========================================================
+
+     AIM
+
+     ========================================================== */
+
+  const targetFov =
+
+    aiming
+
+      ? 45
+
+      : 72;
+
+  camera.fov =
+
+    THREE.MathUtils.lerp(
+
+      camera.fov,
+
+      targetFov,
+
+      dt*10
+
+    );
+
   camera.updateProjectionMatrix();
-  for(const en of [...enemies]){
-    scene.remove(en.sprite);
+
+  /* ==========================================================
+
+     UV TORCH
+
+     ========================================================== */
+
+  if(
+
+    uvHeld &&
+
+    uv>0
+
+  ){
+
+    uv =
+
+      Math.max(
+
+        0,
+
+        uv-dt*15
+
+      );
+
+    uvLight.intensity =
+
+      THREE.MathUtils.lerp(
+
+        uvLight.intensity,
+
+        4.0,
+
+        dt*9
+
+      );
+
+  }else{
+
+    uv =
+
+      Math.min(
+
+        100,
+
+        uv+dt*5
+
+      );
+
+    uvLight.intensity =
+
+      THREE.MathUtils.lerp(
+
+        uvLight.intensity,
+
+        0,
+
+        dt*7
+
+      );
+
   }
-  enemies.length = 0;
-  player.position.set(0, terrainHeight(0,0)+1.7, 8);
-  yawObj.rotation.y = Math.PI;
-  document.getElementById('deathScreen').style.display = 'none';
-  showMsg('The jungle stirs again...');
+
+  /* ==========================================================
+
+     ENVIRONMENT LIGHT FLICKER
+
+     ========================================================== */
+
+  moon.intensity =
+
+    .95+
+
+    Math.sin(t*.8)*.06+
+
+    Math.sin(t*3.7)*.025;
+
+  fire.intensity =
+
+    1.2+
+
+    Math.sin(t*5)*.2;
+
+  /* ==========================================================
+
+     SHRINE OBJECTIVE
+
+     ========================================================== */
+
+  const distShrine =
+
+    Math.hypot(
+
+      player.position.x,
+
+      player.position.z
+
+    );
+
+  if(
+
+    !shrineReached &&
+
+    distShrine<12
+
+  ){
+
+    shrineReached=true;
+
+    relics=3;
+
+    showMsg(
+
+      "THE ANCIENT SHRINE HAS AWAKENED"
+
+    );
+
+    $("objective").textContent =
+
+      "The Naga is awakening...";
+
+    setTimeout(
+
+      () => {
+
+        nagaAwake=true;
+
+        naga.group.visible =
+
+          true;
+
+        naga.group.position.set(
+
+          0,
+
+          terrainHeight(0,0),
+
+          0
+
+        );
+
+        $("boss").style.display =
+
+          "block";
+
+        $("objective").textContent =
+
+          "Survive — banish the Ancient Naga";
+
+        showMsg(
+
+          "THE ANCIENT NAGA AWAKENS"
+
+        );
+
+      },
+
+      2200
+
+    );
+
+  }
+
+  $("distance").textContent =
+
+    "NAGALOKA • "+
+
+    Math.max(
+
+      0,
+
+      Math.round(distShrine)
+
+    )+
+
+    " m";
+
+  /* ==========================================================
+
+     SPIRIT AI
+
+     ========================================================== */
+
+  for(
+
+    const e of [...enemies]
+
+  ){
+
+    const dx =
+
+      player.position.x-
+
+      e.g.position.x;
+
+    const dz =
+
+      player.position.z-
+
+      e.g.position.z;
+
+    const d =
+
+      Math.hypot(
+
+        dx,
+
+        dz
+
+      ) || 1;
+
+    if(d<28){
+
+      e.g.position.x +=
+
+        dx/d*
+
+        e.speed*
+
+        dt;
+
+      e.g.position.z +=
+
+        dz/d*
+
+        e.speed*
+
+        dt;
+
+      if(
+
+        d<2.3 &&
+
+        t-e.last>1.2
+
+      ){
+
+        damage(
+
+          e.kind==="hunter"
+
+            ? 16
+
+            : 9
+
+        );
+
+        e.last=t;
+
+      }
+
+    }
+
+    e.g.position.y =
+
+      terrainHeight(
+
+        e.g.position.x,
+
+        e.g.position.z
+
+      )
+
+      +
+
+      1.25+
+
+      Math.sin(
+
+        t*3+e.phase
+
+      )*.12;
+
+    e.g.rotation.y +=
+
+      dt*.5;
+
+  }
+
+  /* ==========================================================
+
+     NAGA AI
+
+     ========================================================== */
+
+  if(nagaAwake){
+
+    const dx =
+
+      player.position.x-
+
+      naga.group.position.x;
+
+    const dz =
+
+      player.position.z-
+
+      naga.group.position.z;
+
+    const d =
+
+      Math.hypot(
+
+        dx,
+
+        dz
+
+      ) || 1;
+
+    naga.group.position.x +=
+
+      dx/d*
+
+      .8*
+
+      dt;
+
+    naga.group.position.z +=
+
+      dz/d*
+
+      .8*
+
+      dt;
+
+    naga.group.position.y =
+
+      terrainHeight(
+
+        naga.group.position.x,
+
+        naga.group.position.z
+
+      );
+
+    naga.group.rotation.y +=
+
+      dt*.35;
+
+    naga.phase +=
+
+      dt;
+
+    naga.group.scale.setScalar(
+
+      1+
+
+      Math.sin(
+
+        naga.phase*2
+
+      )*.035
+
+    );
+
+    if(
+
+      d<5 &&
+
+      t-naga.lastAttack>1.6
+
+    ){
+
+      damage(24);
+
+      naga.lastAttack=t;
+
+    }
+
+    $("bossfill").style.width =
+
+      Math.max(
+
+        0,
+
+        naga.hp/naga.maxHp*100
+
+      )+"%";
+
+  }
+
+  /* ==========================================================
+
+     ENEMY SPAWN PRESSURE
+
+     ========================================================== */
+
+  if(
+
+    Math.random()<dt*.025 &&
+
+    enemies.length<7 &&
+
+    !nagaAwake
+
+  ){
+
+    spawnSpirit();
+
+  }
+
+  /* ==========================================================
+
+     FIREFLY MOVEMENT
+
+     ========================================================== */
+
+  const p =
+
+    pg.attributes.position.array;
+
+  for(
+
+    let i=0;
+
+    i<pc;
+
+    i++
+
+  ){
+
+    p[i*3] +=
+
+      Math.sin(
+
+        t*.25+i
+
+      )*.0008;
+
+    p[i*3+1] +=
+
+      Math.sin(
+
+        t*.6+i
+
+      )*.0015;
+
+  }
+
+  pg.attributes.position
+
+    .needsUpdate=true;
+
+  /* ==========================================================
+
+     HUD
+
+     ========================================================== */
+
+  $("hp").style.width =
+
+    Math.max(
+
+      0,
+
+      hp
+
+    )+"%";
+
+  $("st").style.width =
+
+    stamina+"%";
+
+  $("uv").style.width =
+
+    uv+"%";
+
+  $("status").textContent =
+
+    nagaAwake
+
+      ? "THE NAGA IS HUNTING"
+
+      : "THE FOREST IS WATCHING";
+
+  $("vignette").style.boxShadow =
+
+    hp<35
+
+      ? `inset 0 0 20vw 5vw rgba(100,0,0,.65)`
+
+      : `inset 0 0 16vw 4vw rgba(0,0,0,.82)`;
+
 }
 
-document.getElementById('restartBtn').addEventListener('click', resetGame);
+/* ============================================================
 
-document.getElementById('startBtn').addEventListener('click', ()=>{
-  document.getElementById('title').style.display = 'none';
-  initAudio();
-  if(!isMobile) canvas.requestPointerLock();
-  gameStarted = true;
-  player.position.set(0, terrainHeight(0,0)+1.7, 8);
-  yawObj.rotation.y = Math.PI;
-  showMsg('Nagaloka awakens...');
-  for(let i=0;i<3;i++) spawnEnemy(['pontianak','krasue','nenek'][Math.floor(Math.random()*3)]);
-});
+   GAME LOOP
 
-// ============ GAME LOOP ============
-const clock = new THREE.Clock();
-let ambientTimer = 0;
-
-function collidesTree(x,z,radius){
-  for(const t of trees){
-    const dx = x-t.x, dz = z-t.z;
-    if(dx*dx+dz*dz < (radius+t.r)*(radius+t.r)) return true;
-  }
-  return false;
-}
+   ============================================================ */
 
 function animate(){
-  requestAnimationFrame(animate);
-  const dt = Math.min(clock.getDelta(), 0.1);
-  const t = clock.getElapsedTime();
 
-  if(gameStarted && alive){
-    // movement
-    let mx=0, mz=0;
-    if(isMobile){
-      mx = moveVec.x; mz = moveVec.y;
-    } else {
-      if(keys['KeyW']) mz -= 1;
-      if(keys['KeyS']) mz += 1;
-      if(keys['KeyA']) mx -= 1;
-      if(keys['KeyD']) mx += 1;
-    }
-    const moving = (mx*mx+mz*mz) > 0.01;
-    const isSprinting = sprint && stamina>2 && moving;
-    const speed = (isSprinting ? 6.5 : 3.2) * dt;
-    if(moving){
-      const len = Math.hypot(mx,mz)||1;
-      mx/=len; mz/=len;
-      const forward = new THREE.Vector3(0,0,-1).applyQuaternion(yawObj.quaternion);
-      const right = new THREE.Vector3(1,0,0).applyQuaternion(yawObj.quaternion);
-      const moveDir = new THREE.Vector3();
-      moveDir.addScaledVector(forward, -mz);
-      moveDir.addScaledVector(right, mx);
-      moveDir.y = 0;
-      moveDir.normalize();
-      const nx = player.position.x + moveDir.x*speed;
-      const nz = player.position.z + moveDir.z*speed;
-      if(!collidesTree(nx,nz,0.4)){
-        player.position.x = nx;
-        player.position.z = nz;
-      }
-    }
-    player.position.y = terrainHeight(player.position.x, player.position.z) + 1.7 + Math.sin(t*8)*(moving?0.03:0);
+  requestAnimationFrame(
 
-    if(isSprinting) stamina = Math.max(0, stamina - dt*22);
-    else stamina = Math.min(100, stamina + dt*12);
-    // can't aim while sprinting - keeps scope meaningful as a deliberate, vulnerable act
-    if(isSprinting) aiming = false;
+    animate
 
-    // UV torch - slight handheld unsteadiness on top of the charge-driven intensity
-    const torchJitter = 1 + Math.sin(t*23)*0.04 + Math.sin(t*7.3)*0.03;
-    if(uvHeld && uvCharge>0){
-      uvLight.intensity = THREE.MathUtils.lerp(uvLight.intensity, 3.2*torchJitter, dt*8);
-      uvCharge = Math.max(0, uvCharge - dt*14);
-      document.getElementById('uvFlash').style.opacity = 0.6;
-    } else {
-      uvLight.intensity = THREE.MathUtils.lerp(uvLight.intensity, 0, dt*6);
-      uvCharge = Math.min(100, uvCharge + dt*6);
-      document.getElementById('uvFlash').style.opacity = 0;
-    }
+  );
 
-    // dappled moonlight flicker, like canopy shifting in wind - subtle, not distracting
-    moonLight.intensity = 0.5 + Math.sin(t*1.3+moonFlickerSeed)*0.05 + Math.sin(t*4.1+moonFlickerSeed)*0.02;
+  const dt =
 
-    // scope: narrow FOV smoothly, show reticle, hide default crosshair while scoped
-    const targetFov = aiming ? scopeFov : baseFov;
-    camera.fov = THREE.MathUtils.lerp(camera.fov, targetFov, dt*10);
-    camera.updateProjectionMatrix();
-    document.getElementById('scopeOverlay').style.display = aiming ? 'block' : 'none';
-    crosshairEl.style.opacity = aiming ? 0 : 1;
+    Math.min(
 
-    // camera shake decay (damage impacts, close attacks)
-    if(shakeTime > 0){
-      shakeTime = Math.max(0, shakeTime - dt);
-      const s = shakeMag * (shakeTime>0 ? 1 : 0);
-      camera.position.x = (Math.random()-0.5)*s;
-      camera.position.y = (Math.random()-0.5)*s;
-      if(shakeTime<=0){ shakeMag=0; camera.position.set(0,0,0); }
-    }
+      clock.getDelta(),
 
-    // lurking eyes: flicker on briefly in the tree line, only when nothing is actively hunting
-    for(const eye of lurkingEyes){
-      eye.timer -= dt;
-      if(eye.timer <= 0){
-        if(!eye.visible){
-          repositionEyes(eye);
-          eye.visible = true;
-          eye.timer = 0.4 + Math.random()*1.2;
-        } else {
-          eye.visible = false;
-          eye.timer = 5 + Math.random()*10;
-        }
-      }
-      const targetOp = eye.visible ? 0.55 : 0;
-      eye.mat.opacity = THREE.MathUtils.lerp(eye.mat.opacity, targetOp, dt*6);
-      eye.sprite.lookAt(camera.getWorldPosition(new THREE.Vector3()));
-    }
+      .05
 
-    // heartbeat vignette when badly hurt - tightens and pulses with a slow beat
-    const vign = document.getElementById('vignette');
-    if(hp < 35 && alive){
-      const beat = 0.75 + Math.abs(Math.sin(t*3.4))*0.25;
-      vign.style.opacity = beat;
-      vign.style.boxShadow = `inset 0 0 ${14-hp/35*4}vw ${3+ (1-hp/35)*3}vw rgba(120,10,10,${0.55+(1-hp/35)*0.25})`;
-    } else {
-      vign.style.opacity = 0.75;
-      vign.style.boxShadow = 'inset 0 0 18vw 4vw rgba(0,0,0,0.85)';
-    }
+    );
 
-    // enemy spawn pacing
-    spawnTimer -= dt;
-    if(spawnTimer <= 0 && enemies.length < 8){
-      spawnEnemy(['pontianak','krasue','nenek'][Math.floor(Math.random()*3)]);
-      spawnTimer = 6 + Math.random()*8;
-    }
+  const t =
 
-    // enemy AI
-    for(const en of enemies){
-      if(en.state==='dying') continue;
-      if(en.mat.opacity < 1) en.mat.opacity = Math.min(1, en.mat.opacity + dt*2);
-      const dx = player.position.x - en.sprite.position.x;
-      const dz = player.position.z - en.sprite.position.z;
-      const dist = Math.hypot(dx,dz);
+    clock.elapsedTime;
 
-      // UV light repels/damages certain enemies when close & lit
-      const litAndClose = uvHeld && uvLight.intensity>1.5 && dist < 14;
+  update(
 
-      if(dist < en.detectRange || litAndClose){
-        en.state = dist < 2.2 ? 'attack' : 'hunt';
-      } else if(dist > en.detectRange*1.6){
-        en.state = 'lurk';
-      }
+    dt,
 
-      if(en.state==='hunt'){
-        const spd = litAndClose && en.kind!=='nenek' ? en.speed*0.4 : en.speed;
-        const nx = en.sprite.position.x + (dx/dist)*spd*dt;
-        const nz = en.sprite.position.z + (dz/dist)*spd*dt;
-        en.sprite.position.x = nx;
-        en.sprite.position.z = nz;
-      }
-      if(en.state==='attack' && t-en.lastAttack > 1.1){
-        damagePlayer(en.dmg);
-        en.lastAttack = t;
-      }
-      const groundY = terrainHeight(en.sprite.position.x, en.sprite.position.z);
-      const hoverH = en.kind==='krasue' ? 1.8+Math.sin(t*2+en.bobPhase)*0.4 : 1.2+Math.sin(t*3+en.bobPhase)*0.08;
-      en.sprite.position.y = groundY + hoverH;
-      en.sprite.material.rotation = Math.sin(t+en.bobPhase)*0.05;
-    }
+    t
 
-    // UV damage-over-time tick to nearby enemies while lit
-    if(uvHeld && uvLight.intensity>1.5){
-      for(const en of enemies){
-        if(en.state==='dying') continue;
-        const d = en.sprite.position.distanceTo(camera.getWorldPosition(new THREE.Vector3()));
-        if(d < 10){
-          const dir = new THREE.Vector3(); camera.getWorldDirection(dir);
-          const origin = new THREE.Vector3(); camera.getWorldPosition(origin);
-          const toEnemy = en.sprite.position.clone().sub(origin).normalize();
-          if(dir.angleTo(toEnemy) < 0.3){
-            en.hp -= dt * 6 * en.uvVuln;
-            if(en.hp<=0) killEnemy(en);
-          }
-        }
-      }
-    }
+  );
 
-    // ambient scream cue
-    ambientTimer -= dt;
-    if(ambientTimer<=0){
-      ambientTimer = 14+Math.random()*20;
-      if(enemies.length>0 && Math.random()<0.5) sfxScream();
-    }
+  renderer.render(
 
-    // particles drift
-    const pp = particleGeo.attributes.position.array;
-    for(let i=0;i<particleCount;i++){
-      pp[i*3+1] += Math.sin(t*0.5+i)*0.0015;
-      pp[i*3] += Math.cos(t*0.3+i)*0.001;
-    }
-    particleGeo.attributes.position.needsUpdate = true;
+    scene,
 
-    // regen stamina bar UI
-    document.getElementById('hpfill').style.width = Math.max(0,hp)+'%';
-    document.getElementById('stfill').style.width = stamina+'%';
-    document.getElementById('uvfill').style.width = uvCharge+'%';
-  }
+    camera
 
-  renderer.render(scene, camera);
+  );
+
 }
+
 animate();
 
-window.addEventListener('resize', ()=>{
-  camera.aspect = window.innerWidth/window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
+/* ============================================================
+
+   RESIZE
+
+   ============================================================ */
+
+addEventListener(
+
+  "resize",
+
+  () => {
+
+    camera.aspect =
+
+      innerWidth/
+
+      innerHeight;
+
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(
+
+      innerWidth,
+
+      innerHeight
+
+    );
+
+  }
+
+);
 
 })();
+
 </script>
+
 </body>
+
 </html>
