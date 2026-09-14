@@ -43,7 +43,8 @@ html,body{margin:0;padding:0;overflow:hidden;background:#030706;color:#d9cfb5;fo
 #aim{right:130px;bottom:70px;border:2px solid rgba(210,200,175,.35);background:rgba(210,200,175,.1)}
 #sprint{left:155px;bottom:70px;border:2px solid rgba(150,210,100,.3);background:rgba(80,120,50,.1)}
 #dodge{right:125px;bottom:150px;border:2px solid rgba(210,180,100,.35);background:rgba(150,110,40,.1)}
-#vignette{position:fixed;inset:0;z-index:15;pointer-events:none;box-shadow:inset 0 0 16vw 4vw rgba(0,0,0,.82);transition:box-shadow .3s}
+#vignette{position:fixed;inset:0;z-index:15;pointer-events:none;box-shadow:inset 0 0 14vw 4vw rgba(0,0,0,.58);transition:box-shadow .3s}
+#sound{position:fixed;top:18px;right:20px;z-index:25;pointer-events:all;cursor:pointer;font-size:11px;letter-spacing:2px;color:#d3b56e;border:1px solid rgba(211,181,110,.4);padding:8px 12px;background:rgba(10,14,10,.4);text-shadow:0 2px 6px #000}
 #damage{position:fixed;inset:0;z-index:16;pointer-events:none;background:rgba(170,20,20,.4);opacity:0;transition:opacity .15s}
 #boss{position:absolute;left:50%;top:8px;transform:translateX(-50%);width:min(420px,55vw);display:none}
 #boss .bname{text-align:center;color:#c9a86a;font-size:11px;letter-spacing:4px;margin-bottom:4px}
@@ -58,11 +59,13 @@ html,body{margin:0;padding:0;overflow:hidden;background:#030706;color:#d9cfb5;fo
   #hud{left:12px;right:12px;bottom:12px}
   .bar{width:125px}
   #ammo{font-size:18px}
+  #sound{top:12px;right:12px;font-size:9px;padding:6px 10px}
 }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
+<div id="sound">♪ SOUND: ON</div>
 <div id="title">
   <h1>NAGALOKA</h1>
   <div class="sub">〜 REALM OF THE NAGA 〜</div>
@@ -113,7 +116,7 @@ html,body{margin:0;padding:0;overflow:hidden;background:#030706;color:#d9cfb5;fo
     </div>
   </div>
   <div id="controls">
-    WASD MOVE · MOUSE LOOK · CLICK FIRE · F / RMB UV TORCH · C AIM · SHIFT SPRINT · SPACE DODGE
+    WASD MOVE · MOUSE LOOK · CLICK FIRE · F / RMB UV TORCH · C AIM · SHIFT SPRINT · SPACE DODGE · M MUTE
   </div>
 </div>
 <div id="mobile">
@@ -152,8 +155,8 @@ const isMobile =
    ============================================================ */
 
 let scene = new THREE.Scene();
-scene.background = new THREE.Color(0x07100d);
-scene.fog = new THREE.FogExp2(0x07100d, 0.018);
+scene.background = new THREE.Color(0x0b1712);
+scene.fog = new THREE.FogExp2(0x0b1712, 0.0105);
 
 let renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));
@@ -457,10 +460,10 @@ for(let i=0;i<12;i++){
    LIGHTING
    ============================================================ */
 
-const hemi = new THREE.HemisphereLight(0x5f806f, 0x050806, .7);
+const hemi = new THREE.HemisphereLight(0x6f9483, 0x0a120c, 1.05);
 scene.add(hemi);
 
-const moon = new THREE.DirectionalLight(0x9ab6dd, 1.05);
+const moon = new THREE.DirectionalLight(0xa8c6e6, 1.4);
 moon.position.set(-55, 80, 35);
 moon.castShadow = true;
 moon.shadow.mapSize.set(1536, 1536);
@@ -567,21 +570,70 @@ naga = makeNaga();
 
 const enemies = [];
 function makeSpirit(kind){
-  const g = new THREE.Group();
-  const body = new THREE.Mesh(
-    new THREE.SphereGeometry(kind==="hunter" ? 1.0 : .75, 12, 10),
-    mat(kind==="hunter" ? 0x6d3030 : 0xd4cbbd)
-  );
-  body.scale.y = 1.45;
-  body.castShadow = true;
-  g.add(body);
+  // kind "hunter" -> small fire-wyrm (aggressive, reddish, faster)
+  // kind "spirit" -> mist wyrmling (paler, teal, slower)
+  const isHunter = kind==="hunter";
+  const scale = isHunter ? 1.05 : .82;
+  const bodyMat = mat(isHunter ? 0x7a2c1c : 0x275a4e, .55, .15);
+  const bellyMat = mat(isHunter ? 0xb0602c : 0x4c9482, .5, .1);
+  const wingMat = new THREE.MeshStandardMaterial({
+    color: isHunter ? 0x3a1409 : 0x0f2e26,
+    roughness:.6, metalness:.05,
+    transparent:true, opacity:.5, side:THREE.DoubleSide
+  });
+  const eyeMat = new THREE.MeshBasicMaterial({ color: isHunter ? 0xff7a35 : 0x8fe6cf });
 
-  const eyeM = new THREE.MeshBasicMaterial({ color:0xff5b45 });
-  for(const x of [-.25,.25]){
-    const e = new THREE.Mesh(new THREE.SphereGeometry(.1, 6, 6), eyeM);
-    e.position.set(x, .25, -.68);
+  const g = new THREE.Group();
+
+  // serpentine body, tapering toward the tail
+  const segCount = 5;
+  for(let i=0;i<segCount;i++){
+    const r = (.4 - i*.055) * scale;
+    const seg = new THREE.Mesh(new THREE.SphereGeometry(Math.max(r,.06), 10, 8), i===0?bellyMat:bodyMat);
+    seg.position.set(0, .04*scale, i*.42*scale);
+    seg.scale.set(1, .82, 1.35);
+    seg.castShadow = true;
+    g.add(seg);
+  }
+
+  // head + snout
+  const head = new THREE.Mesh(new THREE.ConeGeometry(.34*scale, .72*scale, 8), bodyMat);
+  head.rotation.x = Math.PI/2;
+  head.position.set(0, .08*scale, -.36*scale);
+  head.castShadow = true;
+  g.add(head);
+
+  // horns
+  for(const side of [-1,1]){
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(.055*scale, .3*scale, 5), bodyMat);
+    horn.position.set(side*.13*scale, .34*scale, -.14*scale);
+    horn.rotation.z = side*.4;
+    horn.rotation.x = -.3;
+    g.add(horn);
+  }
+
+  // glowing eyes
+  for(const side of [-1,1]){
+    const e = new THREE.Mesh(new THREE.SphereGeometry(.06*scale, 6, 6), eyeMat);
+    e.position.set(side*.13*scale, .1*scale, -.66*scale);
     g.add(e);
   }
+
+  // wings (animated in update loop)
+  const wings = [];
+  for(const side of [-1,1]){
+    const wing = new THREE.Mesh(new THREE.PlaneGeometry(.95*scale, .58*scale), wingMat);
+    wing.position.set(side*.28*scale, .22*scale, .15*scale);
+    wing.rotation.y = side*.55;
+    g.add(wing);
+    wings.push(wing);
+  }
+
+  g.userData.wings = wings;
+  g.userData.eyeGlow = new THREE.PointLight(isHunter?0xff6a30:0x6fe0c0, isHunter?.9:.6, 4.5);
+  g.userData.eyeGlow.position.set(0,.15*scale,-.6*scale);
+  g.add(g.userData.eyeGlow);
+
   return g;
 }
 
@@ -605,6 +657,194 @@ function spawnSpirit(){
 for(let i=0;i<5;i++){
   spawnSpirit();
 }
+
+/* ============================================================
+   GAMELAN AMBIENT SOUNDTRACK (procedural, Web Audio)
+   ============================================================ */
+
+let audioCtx = null;
+let masterGain = null;
+let musicOn = true;
+let musicStarted = false;
+let gongTimer = null;
+let belltimer = null;
+let droneNodes = null;
+
+function buildImpulse(ctx, duration, decay){
+  const rate = ctx.sampleRate;
+  const len = Math.floor(rate*duration);
+  const impulse = ctx.createBuffer(2, len, rate);
+  for(let ch=0; ch<2; ch++){
+    const data = impulse.getChannelData(ch);
+    for(let i=0;i<len;i++){
+      data[i] = (Math.random()*2-1) * Math.pow(1-i/len, decay);
+    }
+  }
+  return impulse;
+}
+
+// approximated slendro-style scale, rooted low for a dark ambient feel
+const gamelanScale = [174.6, 196.0, 233.1, 261.6, 293.7, 349.2, 392.0, 466.2];
+
+function initAudio(){
+  if(audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0;
+  masterGain.connect(audioCtx.destination);
+
+  const reverb = audioCtx.createConvolver();
+  reverb.buffer = buildImpulse(audioCtx, 4.5, 2.8);
+  reverb.connect(masterGain);
+
+  const dry = audioCtx.createGain();
+  dry.gain.value = .55;
+  dry.connect(masterGain);
+
+  const wet = audioCtx.createGain();
+  wet.gain.value = .6;
+  wet.connect(reverb);
+
+  audioCtx._dry = dry;
+  audioCtx._wet = wet;
+
+  // low horror drone, always running under the gamelan
+  const drone = audioCtx.createOscillator();
+  drone.type = "sine";
+  drone.frequency.value = 54;
+  const drone2 = audioCtx.createOscillator();
+  drone2.type = "sine";
+  drone2.frequency.value = 54*1.5005; // slow beating for unease
+  const droneGain = audioCtx.createGain();
+  droneGain.gain.value = .1;
+  const lfo = audioCtx.createOscillator();
+  lfo.type = "sine";
+  lfo.frequency.value = .05;
+  const lfoGain = audioCtx.createGain();
+  lfoGain.gain.value = .035;
+  lfo.connect(lfoGain);
+  lfoGain.connect(droneGain.gain);
+  drone.connect(droneGain);
+  drone2.connect(droneGain);
+  droneGain.connect(dry);
+  droneGain.connect(wet);
+  drone.start();
+  drone2.start();
+  lfo.start();
+  droneNodes = { drone, drone2, droneGain, lfo };
+}
+
+function playBell(freq, time, vel){
+  const ctx = audioCtx;
+  const osc1 = ctx.createOscillator();
+  osc1.type = "sine";
+  osc1.frequency.value = freq;
+  const osc2 = ctx.createOscillator();
+  osc2.type = "sine";
+  osc2.frequency.value = freq*2.76; // inharmonic partial, gives a metallophone-like timbre
+  const g1 = ctx.createGain();
+  const g2 = ctx.createGain();
+  const pan = ctx.createStereoPanner();
+  pan.pan.value = Math.max(-1, Math.min(1, (Math.random()-.5)*1.4));
+  osc1.connect(g1);
+  osc2.connect(g2);
+  g1.connect(pan);
+  g2.connect(pan);
+  pan.connect(ctx._dry);
+  pan.connect(ctx._wet);
+  const peak = .16*vel;
+  g1.gain.setValueAtTime(0, time);
+  g1.gain.linearRampToValueAtTime(peak, time+.012);
+  g1.gain.exponentialRampToValueAtTime(.0001, time+3.4);
+  g2.gain.setValueAtTime(0, time);
+  g2.gain.linearRampToValueAtTime(peak*.32, time+.012);
+  g2.gain.exponentialRampToValueAtTime(.0001, time+1.6);
+  osc1.start(time);
+  osc1.stop(time+3.5);
+  osc2.start(time);
+  osc2.stop(time+1.7);
+}
+
+function playGong(time, vel){
+  const ctx = audioCtx;
+  const osc = ctx.createOscillator();
+  osc.type = "sine";
+  osc.frequency.value = 50;
+  const osc2 = ctx.createOscillator();
+  osc2.type = "sine";
+  osc2.frequency.value = 50*1.498;
+  const g = ctx.createGain();
+  osc.connect(g);
+  osc2.connect(g);
+  g.connect(ctx._dry);
+  g.connect(ctx._wet);
+  g.gain.setValueAtTime(0, time);
+  g.gain.linearRampToValueAtTime(.3*vel, time+.08);
+  g.gain.exponentialRampToValueAtTime(.0001, time+7.5);
+  osc.start(time);
+  osc.stop(time+7.6);
+  osc2.start(time);
+  osc2.stop(time+7.6);
+}
+
+function scheduleBells(){
+  if(!musicOn || !audioCtx) return;
+  const intensity = nagaAwake ? 1.4 : 1;
+  const now = audioCtx.currentTime;
+  const note = gamelanScale[Math.floor(Math.random()*gamelanScale.length)] * (Math.random()<.3?2:1);
+  playBell(note, now+.02, .55*intensity+Math.random()*.2);
+  const next = (nagaAwake ? (.5+Math.random()*.7) : (1.1+Math.random()*1.6));
+  belltimer = setTimeout(scheduleBells, next*1000);
+}
+
+function scheduleGong(){
+  if(!musicOn || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  playGong(now+.02, nagaAwake ? 1.1 : .7);
+  const next = nagaAwake ? (5+Math.random()*3) : (11+Math.random()*9);
+  gongTimer = setTimeout(scheduleGong, next*1000);
+}
+
+function startMusic(){
+  initAudio();
+  if(audioCtx.state==="suspended") audioCtx.resume();
+  masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+  masterGain.gain.linearRampToValueAtTime(musicOn?.85:0, audioCtx.currentTime+2.5);
+  if(!musicStarted){
+    musicStarted = true;
+    scheduleBells();
+    scheduleGong();
+  }
+}
+
+function toggleMusic(){
+  musicOn = !musicOn;
+  $("sound").textContent = "♪ SOUND: " + (musicOn ? "ON" : "OFF");
+  if(!audioCtx){
+    if(musicOn) startMusic();
+    return;
+  }
+  if(musicOn){
+    audioCtx.resume();
+    masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    masterGain.gain.linearRampToValueAtTime(.85, audioCtx.currentTime+1.2);
+    if(!belltimer) scheduleBells();
+    if(!gongTimer) scheduleGong();
+  }else{
+    masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+.6);
+    clearTimeout(belltimer);
+    clearTimeout(gongTimer);
+    belltimer = null;
+    gongTimer = null;
+  }
+}
+
+$("sound").addEventListener("click", toggleMusic);
+window.addEventListener("keydown", e => {
+  if(e.code==="KeyM") toggleMusic();
+});
 
 /* ============================================================
    INPUT
@@ -812,7 +1052,7 @@ function fire(){
       enemies.splice(enemies.indexOf(best), 1);
       kills++;
       if(kills%3===0){
-        showMsg(kills+" spirits banished");
+        showMsg(kills+" wyrmlings banished");
       }
     }
   }
@@ -878,6 +1118,7 @@ $("start").onclick = () => {
   if(!isMobile){
     canvas.requestPointerLock();
   }
+  startMusic();
   showMsg("Nagaloka awakens...");
 };
 
@@ -945,7 +1186,7 @@ function update(dt,t){
     uvLight.intensity = THREE.MathUtils.lerp(uvLight.intensity, 0, dt*7);
   }
 
-  moon.intensity = .95 + Math.sin(t*.8)*.06 + Math.sin(t*3.7)*.025;
+  moon.intensity = 1.3 + Math.sin(t*.8)*.08 + Math.sin(t*3.7)*.03;
   fireLight.intensity = 1.2 + Math.sin(t*5)*.2;
 
   const distShrine = Math.hypot(player.position.x, player.position.z);
@@ -979,7 +1220,13 @@ function update(dt,t){
       }
     }
     e.g.position.y = terrainHeight(e.g.position.x, e.g.position.z) + 1.25 + Math.sin(t*3+e.phase)*.12;
-    e.g.rotation.y += dt*.5;
+    e.g.rotation.y = Math.atan2(dx, dz) + Math.PI;
+    const wings = e.g.userData.wings;
+    if(wings){
+      const flap = Math.sin(t*(e.kind==="hunter"?14:9)+e.phase)*.55;
+      wings[0].rotation.z = flap;
+      wings[1].rotation.z = -flap;
+    }
   }
 
   if(nagaAwake){
@@ -1015,8 +1262,8 @@ function update(dt,t){
   $("uv").style.width = uv+"%";
   $("status").textContent = nagaAwake ? "THE NAGA IS HUNTING" : "THE FOREST IS WATCHING";
   $("vignette").style.boxShadow = hp<35
-    ? `inset 0 0 20vw 5vw rgba(100,0,0,.65)`
-    : `inset 0 0 16vw 4vw rgba(0,0,0,.82)`;
+    ? `inset 0 0 18vw 5vw rgba(100,0,0,.55)`
+    : `inset 0 0 14vw 4vw rgba(0,0,0,.58)`;
 }
 
 /* ============================================================
