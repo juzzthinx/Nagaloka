@@ -2,20 +2,36 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&display=swap" rel="stylesheet">
 <title>NAGALOKA — Realm of the Naga</title>
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;overflow:hidden;background:#030706;color:#d9cfb5;font-family:"Courier New",monospace;touch-action:none}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{margin:0;padding:0;overflow:hidden;background:#030706;color:#d9cfb5;font-family:"Courier New",monospace;touch-action:none;height:100%}
 #c{display:block;width:100vw;height:100vh}
 #ui{position:fixed;inset:0;pointer-events:none;z-index:20}
 #crosshair{position:absolute;left:50%;top:50%;width:7px;height:7px;border:1px solid rgba(225,215,185,.75);border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 10px #000}
+#scope{position:fixed;inset:0;z-index:22;display:none;pointer-events:none}
+#scope .mask{position:absolute;left:50%;top:50%;width:58vmin;height:58vmin;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 9999px #000;border:2px solid rgba(6,10,8,.9)}
+#scope .tint{position:absolute;left:50%;top:50%;width:58vmin;height:58vmin;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(140,210,190,.05) 0%,rgba(0,0,0,.3) 72%,rgba(0,0,0,.55) 100%)}
+#scope .vline{position:absolute;left:50%;top:calc(50% - 29vmin);width:1px;height:58vmin;background:rgba(210,235,225,.8);transform:translateX(-50%)}
+#scope .hline{position:absolute;top:50%;left:calc(50% - 29vmin);height:1px;width:58vmin;background:rgba(210,235,225,.8);transform:translateY(-50%)}
+#scope .dot{position:absolute;left:50%;top:50%;width:4px;height:4px;border-radius:50%;background:#d9f5ea;transform:translate(-50%,-50%);box-shadow:0 0 6px rgba(217,245,234,.8)}
+#scope .tick{position:absolute;background:rgba(210,235,225,.75);width:1px;height:9px;top:calc(50% - 4px)}
+#scope .t1{left:calc(50% - 10vmin)}
+#scope .t2{left:calc(50% + 10vmin)}
+#scope .t3{left:calc(50% - 20vmin)}
+#scope .t4{left:calc(50% + 20vmin)}
+#scope .zoomLabel{position:absolute;left:50%;bottom:calc(50% - 27vmin);transform:translateX(-50%);color:rgba(210,235,225,.7);font-size:10px;letter-spacing:2px}
 #msg{position:absolute;top:16%;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .5s;text-align:center;letter-spacing:3px;text-shadow:0 2px 10px #000;max-width:90%}
-#quest{position:absolute;top:22px;left:22px;text-shadow:0 2px 8px #000}
+#quest{position:absolute;top:calc(22px + env(safe-area-inset-top,0px));left:22px;text-shadow:0 2px 8px #000}
 #quest .qtitle{font-size:15px;color:#d7b76c;letter-spacing:2px}
 #quest .qline{font-size:11px;opacity:.75;margin-top:7px;letter-spacing:1px}
-#distance{position:absolute;top:22px;left:50%;transform:translateX(-50%);font-size:12px;letter-spacing:3px;text-shadow:0 2px 8px #000}
-#hud{position:absolute;left:20px;right:20px;bottom:18px;display:flex;justify-content:space-between;align-items:flex-end}
+#distance{position:absolute;top:calc(22px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);font-size:12px;letter-spacing:3px;text-shadow:0 2px 8px #000}
+#hud{position:absolute;left:20px;right:20px;bottom:calc(18px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;align-items:flex-end}
 .bar{width:170px;margin-top:8px}
 .label{font-size:9px;letter-spacing:2px;opacity:.65;margin-bottom:3px}
 .bg{height:8px;border:1px solid rgba(220,205,170,.3);background:rgba(0,0,0,.35)}
@@ -25,11 +41,29 @@ html,body{margin:0;padding:0;overflow:hidden;background:#030706;color:#d9cfb5;fo
 #uv{background:linear-gradient(90deg,#2d4f82,#9bd5ff)}
 #ammo{font-size:21px;color:#e9ddbd;text-align:right}
 #status{text-align:right;font-size:9px;letter-spacing:2px;opacity:.6;margin-top:5px}
-#title,#death{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at center,#172018 0%,#020403 72%);cursor:pointer}
-#title h1{font-size:min(14vw,96px);font-weight:normal;letter-spacing:13px;color:#c8aa68;margin:0;text-shadow:0 0 35px rgba(200,170,105,.35)}
+#death{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at center,#172018 0%,#020403 72%);cursor:pointer}
 .sub{margin-top:10px;opacity:.6;letter-spacing:6px;font-size:12px}
-.start,.restart{margin-top:52px;padding:15px 34px;border:1px solid #705e3d;color:#d3b56e;letter-spacing:4px;animation:pulse 2s infinite}
+.restart{margin-top:52px;padding:15px 34px;border:1px solid #705e3d;color:#d3b56e;letter-spacing:4px;animation:pulse 2s infinite}
 @keyframes pulse{50%{opacity:.35}}
+
+/* ---- retro 90s CRT title / loading screen ---- */
+#title{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:#000;cursor:pointer;overflow:hidden;filter:grayscale(1) contrast(1.25)}
+#title::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,#3a3a3a 0%,#000 78%);opacity:.9}
+#title::after{content:"";position:absolute;inset:-2px;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0px,rgba(255,255,255,.05) 1px,transparent 2px,transparent 4px);mix-blend-mode:overlay;animation:scanroll 6s linear infinite}
+@keyframes scanroll{0%{background-position:0 0}100%{background-position:0 40px}}
+#titleGlitch{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,transparent 48%,rgba(255,255,255,.18) 49%,transparent 51%);opacity:0;animation:glitchbar 5.5s steps(1) infinite}
+@keyframes glitchbar{0%,91%,100%{opacity:0;transform:translateY(-40vh)}92%{opacity:.9;transform:translateY(10vh)}93%{opacity:0}94%{opacity:.7;transform:translateY(70vh)}95%{opacity:0}}
+#title h1{position:relative;font-family:"Metamorphous","Cinzel",serif;font-size:min(15vw,100px);font-weight:normal;letter-spacing:9px;color:#f2f2f2;margin:0;text-shadow:0 0 2px #fff,0 0 24px rgba(255,255,255,.6),3px 0 0 rgba(255,255,255,.15),-3px 0 0 rgba(0,0,0,.4);animation:flicker 3.2s infinite}
+@keyframes flicker{0%,100%{opacity:1}4%{opacity:.82}5%{opacity:1}52%{opacity:1}53%{opacity:.7}55%{opacity:1}}
+#title .sub{font-family:"Courier New",monospace;color:#c9c9c9}
+#title .tape{position:relative;margin-top:6px;font-size:10px;letter-spacing:5px;color:#9a9a9a;opacity:.8}
+#title .tape::before{content:"● REC "}
+#title .tape::before{color:#e2e2e2;animation:pulse 1.4s infinite}
+.start{position:relative;margin-top:52px;padding:15px 34px;border:2px solid #ececec;color:#f2f2f2;letter-spacing:4px;animation:pulse 2s infinite;background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(255,255,255,.04) 6px,rgba(255,255,255,.04) 12px)}
+#loadbar{position:relative;margin-top:34px;width:min(70vw,340px);height:10px;border:1px solid #d8d8d8}
+#loadbar i{display:block;height:100%;width:0%;background:#e8e8e8;animation:loadfill 2.4s ease-in-out infinite}
+@keyframes loadfill{0%{width:0%}45%{width:78%}60%{width:60%}100%{width:100%}}
+#loadlabel{margin-top:10px;font-size:9px;letter-spacing:3px;color:#b6b6b6}
 #death{display:none;background:rgba(0,0,0,.94);z-index:200}
 #death h2{font-size:27px;letter-spacing:6px;color:#9b3434;font-weight:normal}
 #death .restart{pointer-events:all;cursor:pointer;margin-top:25px}
@@ -44,9 +78,9 @@ html,body{margin:0;padding:0;overflow:hidden;background:#030706;color:#d9cfb5;fo
 #sprint{left:155px;bottom:70px;border:2px solid rgba(150,210,100,.3);background:rgba(80,120,50,.1)}
 #dodge{right:125px;bottom:150px;border:2px solid rgba(210,180,100,.35);background:rgba(150,110,40,.1)}
 #vignette{position:fixed;inset:0;z-index:15;pointer-events:none;box-shadow:inset 0 0 14vw 4vw rgba(0,0,0,.58);transition:box-shadow .3s}
-#sound{position:fixed;top:18px;right:20px;z-index:25;pointer-events:all;cursor:pointer;font-size:11px;letter-spacing:2px;color:#d3b56e;border:1px solid rgba(211,181,110,.4);padding:8px 12px;background:rgba(10,14,10,.4);text-shadow:0 2px 6px #000}
+#sound{position:fixed;top:calc(18px + env(safe-area-inset-top,0px));right:20px;z-index:25;pointer-events:all;cursor:pointer;font-size:11px;letter-spacing:2px;color:#d3b56e;border:1px solid rgba(211,181,110,.4);padding:8px 12px;background:rgba(10,14,10,.4);text-shadow:0 2px 6px #000}
 #damage{position:fixed;inset:0;z-index:16;pointer-events:none;background:rgba(170,20,20,.4);opacity:0;transition:opacity .15s}
-#boss{position:absolute;left:50%;top:8px;transform:translateX(-50%);width:min(420px,55vw);display:none}
+#boss{position:absolute;left:50%;top:calc(8px + env(safe-area-inset-top,0px));transform:translateX(-50%);width:min(420px,55vw);display:none}
 #boss .bname{text-align:center;color:#c9a86a;font-size:11px;letter-spacing:4px;margin-bottom:4px}
 #boss .bbg{height:7px;border:1px solid rgba(210,180,110,.5);background:rgba(0,0,0,.5)}
 #boss .bfill{height:100%;background:linear-gradient(90deg,#641b1b,#d59a47)}
@@ -67,8 +101,12 @@ html,body{margin:0;padding:0;overflow:hidden;background:#030706;color:#d9cfb5;fo
 <canvas id="c"></canvas>
 <div id="sound">♪ SOUND: ON</div>
 <div id="title">
+  <div id="titleGlitch"></div>
   <h1>NAGALOKA</h1>
   <div class="sub">〜 REALM OF THE NAGA 〜</div>
+  <div class="tape">SIGNAL LOCKED</div>
+  <div id="loadbar"><i></i></div>
+  <div id="loadlabel">LOADING TAPE... PRESS TO PLAY</div>
   <div class="start" id="start">▸ ENTER THE JUNGLE</div>
 </div>
 <div id="death">
@@ -88,6 +126,18 @@ html,body{margin:0;padding:0;overflow:hidden;background:#030706;color:#d9cfb5;fo
     </div>
   </div>
   <div id="crosshair"></div>
+  <div id="scope">
+    <div class="tint"></div>
+    <div class="vline"></div>
+    <div class="hline"></div>
+    <div class="tick t1"></div>
+    <div class="tick t2"></div>
+    <div class="tick t3"></div>
+    <div class="tick t4"></div>
+    <div class="dot"></div>
+    <div class="mask"></div>
+    <div class="zoomLabel">UV·SCOPE 4.5×</div>
+  </div>
   <div id="msg"></div>
   <div id="hud">
     <div>
@@ -133,7 +183,7 @@ html,body{margin:0;padding:0;overflow:hidden;background:#030706;color:#d9cfb5;fo
 </div>
 <div id="vignette"></div>
 <div id="damage"></div>
-<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script>
 (() => {
 "use strict";
@@ -285,67 +335,190 @@ for(let i=0;i<16;i++){
 }
 
 /* ============================================================
-   3D TREES
+   LUSH INSTANCED JUNGLE
+   Multiple distinct tree species, each its own InstancedMesh set,
+   so density can go way up without a per-tree draw-call cost.
+   Randomized per-instance scale/rotation/tilt kills the repetition.
    ============================================================ */
 
 const obstacles = [];
-function makeTree(x, z, ancient=false){
-  const group = new THREE.Group();
-  const h = ancient ? 16+Math.random()*10 : 8+Math.random()*9;
-  const r = ancient ? .75+Math.random()*.45 : .25+Math.random()*.25;
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(r*.7, r, h, 8),
-    ancient ? barkMat : trunkMat
-  );
-  trunk.position.y = h/2;
-  trunk.castShadow = true;
-  trunk.receiveShadow = true;
-  group.add(trunk);
+const canopyMats = [leafMat, leaf2Mat, mat(0x1b4a28), mat(0x0e3320), mat(0x2a5c34)];
+const palmLeafMat = mat(0x1e4d2c, .85);
+const fernMat = mat(0x1a3d22, .9);
 
-  const branchCount = ancient ? 5 : 2;
-  for(let b=0; b<branchCount; b++){
-    const br = new THREE.Mesh(
-      new THREE.CylinderGeometry(r*.18, r*.28, 3+Math.random()*3, 6),
-      barkMat
-    );
-    br.position.set((Math.random()-.5)*1.5, h*.55+Math.random()*h*.3, (Math.random()-.5)*1.5);
-    br.rotation.z = (Math.random()-.5)*1.2;
-    br.rotation.x = (Math.random()-.5)*1.0;
-    group.add(br);
-  }
-
-  const leaves = ancient ? 9 : 5;
-  for(let i=0; i<leaves; i++){
-    const lr = ancient ? 3+Math.random()*2.5 : 1.5+Math.random()*1.3;
-    const lg = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(lr, 1),
-      i%3 ? leafMat : leaf2Mat
-    );
-    lg.position.set((Math.random()-.5)*4, h*.65+Math.random()*h*.38, (Math.random()-.5)*4);
-    lg.scale.y = .55;
-    lg.castShadow = true;
-    group.add(lg);
-  }
-
-  group.position.set(x, terrainHeight(x,z), z);
-  scene.add(group);
-  obstacles.push({ x, z, r:ancient?1.4:.65 });
+function clearZone(x,z){
+  return Math.abs(x)<9 && z<48 && z>-114; // keep temple avenue + lake clear
 }
 
-/* ============================================================
-   LARGE FOREST
-   ============================================================ */
+// Species A: broad canopy giants (icosahedron clumps on a tapered trunk)
+const canopyGeo = new THREE.IcosahedronGeometry(1, 1);
+const trunkGeoA = new THREE.CylinderGeometry(.16, .34, 1, 7);
+const canopyMesh = canopyMats.map(m => {
+  const im = new THREE.InstancedMesh(canopyGeo, m, 700);
+  im.castShadow = true;
+  scene.add(im);
+  return im;
+});
+const trunkMeshA = new THREE.InstancedMesh(trunkGeoA, ancientTrunkOrTrunk(), 500);
+function ancientTrunkOrTrunk(){ return trunkMat; }
+trunkMeshA.castShadow = true;
+trunkMeshA.receiveShadow = true;
+scene.add(trunkMeshA);
 
-for(let i=0;i<330;i++){
+// Species B: tall ancient banyan-style (thicker, taller, draping canopy)
+const trunkGeoB = new THREE.CylinderGeometry(.55, .95, 1, 8);
+const trunkMeshB = new THREE.InstancedMesh(trunkGeoB, barkMat, 90);
+trunkMeshB.castShadow = true;
+trunkMeshB.receiveShadow = true;
+scene.add(trunkMeshB);
+const canopyMeshB = canopyMats.map(m => {
+  const im = new THREE.InstancedMesh(canopyGeo, m, 260);
+  im.castShadow = true;
+  scene.add(im);
+  return im;
+});
+
+// Species C: slender palms (curved trunk look via tilt + frond cluster)
+const trunkGeoC = new THREE.CylinderGeometry(.09, .17, 1, 6);
+const trunkMeshC = new THREE.InstancedMesh(trunkGeoC, barkMat, 260);
+trunkMeshC.castShadow = true;
+scene.add(trunkMeshC);
+const frondGeo = new THREE.ConeGeometry(.12, 1, 4);
+const frondMesh = new THREE.InstancedMesh(frondGeo, palmLeafMat, 260*6);
+frondMesh.castShadow = true;
+scene.add(frondMesh);
+
+// Species D: low fern / undergrowth clusters for ground-level lushness
+const fernGeo = new THREE.ConeGeometry(1, 1, 5);
+const fernMesh = new THREE.InstancedMesh(fernGeo, fernMat, 900);
+scene.add(fernMesh);
+
+const dummy = new THREE.Object3D();
+let trA=0, trB=0, trC=0, frC=0, fern=0;
+const canACounts = canopyMats.map(()=>0);
+const canBCounts = canopyMats.map(()=>0);
+
+function plantGiant(x,z){
+  const h = 8+Math.random()*9;
+  const rBase = .55+Math.random()*.55;
+  dummy.position.set(x, terrainHeight(x,z)+h/2, z);
+  dummy.rotation.set(0, Math.random()*Math.PI*2, 0);
+  dummy.scale.set(rBase, h, rBase);
+  dummy.updateMatrix();
+  trunkMeshA.setMatrixAt(trA++, dummy.matrix);
+  obstacles.push({ x, z, r:.65 });
+
+  const leaves = 5+Math.floor(Math.random()*3);
+  for(let i=0;i<leaves;i++){
+    const lr = 1.4+Math.random()*1.5;
+    dummy.position.set(x+(Math.random()-.5)*4.2, terrainHeight(x,z)+h*.68+Math.random()*h*.4, z+(Math.random()-.5)*4.2);
+    dummy.rotation.set(Math.random()*.5, Math.random()*Math.PI*2, Math.random()*.5);
+    dummy.scale.set(lr, lr*.55, lr);
+    dummy.updateMatrix();
+    const mi = Math.floor(Math.random()*canopyMesh.length);
+    if(canACounts[mi] < 700){
+      canopyMesh[mi].setMatrixAt(canACounts[mi]++, dummy.matrix);
+    }
+  }
+}
+
+function plantAncient(x,z){
+  const h = 15+Math.random()*11;
+  const rBase = .9+Math.random()*.55;
+  dummy.position.set(x, terrainHeight(x,z)+h/2, z);
+  dummy.rotation.set(0, Math.random()*Math.PI*2, 0);
+  dummy.scale.set(rBase, h, rBase);
+  dummy.updateMatrix();
+  trunkMeshB.setMatrixAt(trB++, dummy.matrix);
+  obstacles.push({ x, z, r:1.4 });
+
+  const leaves = 9+Math.floor(Math.random()*4);
+  for(let i=0;i<leaves;i++){
+    const lr = 2.6+Math.random()*2.6;
+    dummy.position.set(x+(Math.random()-.5)*6, terrainHeight(x,z)+h*.62+Math.random()*h*.42, z+(Math.random()-.5)*6);
+    dummy.rotation.set(Math.random()*.4, Math.random()*Math.PI*2, Math.random()*.4);
+    dummy.scale.set(lr, lr*.55, lr);
+    dummy.updateMatrix();
+    const mi = Math.floor(Math.random()*canopyMeshB.length);
+    if(canBCounts[mi] < 260){
+      canopyMeshB[mi].setMatrixAt(canBCounts[mi]++, dummy.matrix);
+    }
+  }
+}
+
+function plantPalm(x,z){
+  const h = 6+Math.random()*5;
+  const tilt = (Math.random()-.5)*.35;
+  dummy.position.set(x, terrainHeight(x,z)+h/2, z);
+  dummy.rotation.set(tilt, Math.random()*Math.PI*2, tilt*.6);
+  dummy.scale.set(1, h, 1);
+  dummy.updateMatrix();
+  trunkMeshC.setMatrixAt(trC++, dummy.matrix);
+  obstacles.push({ x, z, r:.4 });
+
+  const topY = terrainHeight(x,z)+h - Math.sin(tilt)*h*.3;
+  for(let i=0;i<6;i++){
+    const ang = i/6*Math.PI*2;
+    dummy.position.set(x+Math.cos(ang)*.15, topY+.6, z+Math.sin(ang)*.15);
+    dummy.rotation.set(Math.PI*.42, ang, 0);
+    dummy.scale.set(1.6, 2.6+Math.random()*.8, 1.6);
+    dummy.updateMatrix();
+    frondMesh.setMatrixAt(frC++, dummy.matrix);
+  }
+}
+
+function plantFerns(x,z,count){
+  for(let i=0;i<count;i++){
+    if(fern>=900) return;
+    const fx = x+(Math.random()-.5)*3.5;
+    const fz = z+(Math.random()-.5)*3.5;
+    const s = .5+Math.random()*.8;
+    dummy.position.set(fx, terrainHeight(fx,fz)+s*.5, fz);
+    dummy.rotation.set(0, Math.random()*Math.PI*2, 0);
+    dummy.scale.set(s, s*1.3, s);
+    dummy.updateMatrix();
+    fernMesh.setMatrixAt(fern++, dummy.matrix);
+  }
+}
+
+for(let i=0;i<500 && trA<500;i++){
   const a = Math.random()*Math.PI*2;
-  const d = 12+Math.random()*125;
-  const x = Math.cos(a)*d;
-  const z = Math.sin(a)*d;
-  if(Math.abs(x)<8 && z<45 && z>-110){
-    continue;
-  }
-  makeTree(x, z, Math.random()<.08);
+  const d = 10+Math.random()*128;
+  const x = Math.cos(a)*d, z = Math.sin(a)*d;
+  if(clearZone(x,z)) continue;
+  plantGiant(x,z);
+  if(Math.random()<.55) plantFerns(x,z, 2+Math.floor(Math.random()*3));
 }
+for(let i=0;i<90 && trB<90;i++){
+  const a = Math.random()*Math.PI*2;
+  const d = 20+Math.random()*120;
+  const x = Math.cos(a)*d, z = Math.sin(a)*d;
+  if(clearZone(x,z)) continue;
+  plantAncient(x,z);
+}
+for(let i=0;i<260 && trC<260;i++){
+  const a = Math.random()*Math.PI*2;
+  const d = 15+Math.random()*125;
+  const x = Math.cos(a)*d, z = Math.sin(a)*d;
+  if(clearZone(x,z)) continue;
+  plantPalm(x,z);
+  if(Math.random()<.4) plantFerns(x,z, 2);
+}
+while(fern<900){
+  const a = Math.random()*Math.PI*2;
+  const d = 10+Math.random()*130;
+  const x = Math.cos(a)*d, z = Math.sin(a)*d;
+  if(clearZone(x,z)) continue;
+  plantFerns(x,z, 1);
+}
+
+trunkMeshA.count = trA; trunkMeshA.instanceMatrix.needsUpdate = true;
+trunkMeshB.count = trB; trunkMeshB.instanceMatrix.needsUpdate = true;
+trunkMeshC.count = trC; trunkMeshC.instanceMatrix.needsUpdate = true;
+frondMesh.count = frC; frondMesh.instanceMatrix.needsUpdate = true;
+fernMesh.count = fern; fernMesh.instanceMatrix.needsUpdate = true;
+canopyMesh.forEach((im,i) => { im.count = canACounts[i]; im.instanceMatrix.needsUpdate = true; });
+canopyMeshB.forEach((im,i) => { im.count = canBCounts[i]; im.instanceMatrix.needsUpdate = true; });
 
 /* ============================================================
    TEMPLE PILLARS
@@ -418,7 +591,7 @@ shrineGlow.position.set(0, 12, 0);
 temple.add(shrineGlow);
 
 /* ============================================================
-   LAKE
+   LAKES — one main lake + two smaller pools scattered in the jungle
    ============================================================ */
 
 const waterMat = new THREE.MeshStandardMaterial({
@@ -428,6 +601,67 @@ const lake = new THREE.Mesh(new THREE.CircleGeometry(22, 48), waterMat);
 lake.rotation.x = -Math.PI/2;
 lake.position.set(45, terrainHeight(45,20)+.15, 20);
 scene.add(lake);
+
+const smallLakeSpots = [
+  { x:-58, z:-30, r:9 },
+  { x:-30, z:64,  r:6.5 }
+];
+smallLakeSpots.forEach(spot => {
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(spot.r, 36), waterMat.clone());
+  pool.rotation.x = -Math.PI/2;
+  pool.position.set(spot.x, terrainHeight(spot.x, spot.z)+.15, spot.z);
+  scene.add(pool);
+  // ring of stones at the water's edge
+  const stoneCount = 10;
+  for(let i=0;i<stoneCount;i++){
+    const a = i/stoneCount*Math.PI*2;
+    const sx = spot.x+Math.cos(a)*(spot.r+.6);
+    const sz = spot.z+Math.sin(a)*(spot.r+.6);
+    const s = new THREE.Mesh(new THREE.DodecahedronGeometry(.5+Math.random()*.4,0), stoneMat);
+    s.position.set(sx, terrainHeight(sx,sz)+.3, sz);
+    s.rotation.set(Math.random(), Math.random(), Math.random());
+    s.castShadow = true;
+    scene.add(s);
+  }
+});
+
+/* ============================================================
+   ANCIENT PYRAMIDS — stepped stone pyramids as jungle landmarks
+   ============================================================ */
+
+function makePyramid(x, z, baseSize, steps, rotY){
+  const group = new THREE.Group();
+  const totalH = baseSize*.62;
+  const stepH = totalH/steps;
+  for(let i=0;i<steps;i++){
+    const scaleT = 1 - i/steps;
+    const w = baseSize*scaleT;
+    const tier = new THREE.Mesh(new THREE.BoxGeometry(w, stepH, w), i%2 ? stoneMat : mossMat);
+    tier.position.y = stepH*i + stepH/2;
+    tier.castShadow = true;
+    tier.receiveShadow = true;
+    group.add(tier);
+  }
+  // capstone
+  const cap = new THREE.Mesh(new THREE.ConeGeometry(baseSize*.09, stepH*1.4, 4), goldMat);
+  cap.position.y = totalH+stepH*.6;
+  cap.rotation.y = Math.PI/4;
+  cap.castShadow = true;
+  group.add(cap);
+  // carved entrance
+  const door = new THREE.Mesh(new THREE.BoxGeometry(baseSize*.14, stepH*1.6, .3), mat(0x0c0f0c));
+  door.position.set(0, stepH*.8, baseSize/2*.5+.15);
+  group.add(door);
+
+  group.position.set(x, terrainHeight(x,z), z);
+  group.rotation.y = rotY;
+  scene.add(group);
+  obstacles.push({ x, z, r: baseSize*.55 });
+  return group;
+}
+makePyramid(-72, -68, 26, 7, .5);
+makePyramid(68, -55, 18, 6, -1.1);
+makePyramid(-40, -95, 14, 5, 2.2);
 
 /* ============================================================
    WATERFALL
@@ -484,15 +718,229 @@ camera.add(hand);
 hand.position.set(0, -.3, .5);
 
 /* ============================================================
-   UV TORCH
+   FIRST-PERSON UV SNIPER RIFLE
+   Bolt-action profile: long fluted barrel, slim stepped receiver,
+   straight sniper stock with cheek riser, detachable box mag,
+   folded bipod, and a mounted scope (objective + ocular lens,
+   ring mounts, adjustment turrets) that doubles as the ADS view —
+   scoping in hides the model and shows a reticle overlay instead.
+   Also carries the physical UV torch module under the barrel.
+   All child of camera; a rest group handles sway/bob/recoil.
    ============================================================ */
 
+const rifleRest = new THREE.Group();
+rifleRest.position.set(.3, -.27, -.6);
+camera.add(rifleRest);
+
+const rifleMat = mat(0x262b24, .5, .4);
+const rifleMatDark = mat(0x121510, .65, .15);
+const rifleMetal = mat(0xa8aaa1, .28, .88);
+const rifleAccent = mat(0x3c463a, .45, .3);
+const scopeGlassMat = new THREE.MeshBasicMaterial({ color:0x7fd8c8, transparent:true, opacity:.55 });
+const emitterMat = new THREE.MeshStandardMaterial({
+  color:0x9be9ff, emissive:0x6fd8ff, emissiveIntensity:1.6, roughness:.2, metalness:.1
+});
+
+const rifle = new THREE.Group();
+rifleRest.add(rifle);
+
+// straight sniper stock with a raised cheek riser
+const stockMain = new THREE.Mesh(new THREE.BoxGeometry(.07,.08,.38), rifleMatDark);
+stockMain.position.set(0,-.01,.36);
+rifle.add(stockMain);
+const cheekRiser = new THREE.Mesh(new THREE.BoxGeometry(.05,.03,.22), rifleAccent);
+cheekRiser.position.set(0,.05,.3);
+rifle.add(cheekRiser);
+const buttPad = new THREE.Mesh(new THREE.BoxGeometry(.078,.1,.02), rifleMatDark);
+buttPad.position.set(0,-.01,.55);
+rifle.add(buttPad);
+
+// slim stepped receiver
+const receiverLower = new THREE.Mesh(new THREE.BoxGeometry(.085,.075,.34), rifleMat);
+receiverLower.position.set(0,.0,.05);
+rifle.add(receiverLower);
+const receiverTop = new THREE.Mesh(new THREE.BoxGeometry(.055,.03,.4), rifleMatDark);
+receiverTop.position.set(0,.05,-.02);
+rifle.add(receiverTop);
+// bolt handle, angled out to the side
+const bolt = new THREE.Mesh(new THREE.CylinderGeometry(.013,.013,.09,8), rifleMetal);
+bolt.rotation.z = Math.PI/2.3;
+bolt.position.set(.06,.02,.1);
+rifle.add(bolt);
+const boltKnob = new THREE.Mesh(new THREE.SphereGeometry(.016,8,8), rifleMetal);
+boltKnob.position.set(.095,.0,.1);
+rifle.add(boltKnob);
+
+// detachable box magazine
+const magazine = new THREE.Mesh(new THREE.BoxGeometry(.04,.12,.06), rifleMatDark);
+magazine.position.set(0,-.14,.06);
+magazine.rotation.x = .08;
+rifle.add(magazine);
+
+// long fluted barrel
+const barrel = new THREE.Mesh(new THREE.CylinderGeometry(.022,.028,.72,10), rifleMat);
+barrel.rotation.x = Math.PI/2;
+barrel.position.set(0,.02,-.6);
+rifle.add(barrel);
+for(let i=0;i<6;i++){
+  const flute = new THREE.Mesh(new THREE.BoxGeometry(.006,.005,.5), rifleMatDark);
+  const a = i/6*Math.PI*2;
+  flute.position.set(Math.cos(a)*.021, .02+Math.sin(a)*.021, -.58);
+  rifle.add(flute);
+}
+// free-float handguard around the receiver end of the barrel
+const handguard = new THREE.Mesh(new THREE.CylinderGeometry(.032,.032,.28,10), rifleMatDark);
+handguard.rotation.x = Math.PI/2;
+handguard.position.set(0,.02,-.32);
+rifle.add(handguard);
+// muzzle brake / flash hider
+const brake = new THREE.Mesh(new THREE.CylinderGeometry(.03,.026,.1,10), rifleMetal);
+brake.rotation.x = Math.PI/2;
+brake.position.set(0,.02,-.98);
+rifle.add(brake);
+for(let i=0;i<4;i++){
+  const slit = new THREE.Mesh(new THREE.BoxGeometry(.005,.04,.018), rifleMatDark);
+  const a = i/4*Math.PI*2;
+  slit.position.set(Math.cos(a)*.03, .02+Math.sin(a)*.03, -.98);
+  slit.rotation.z = a;
+  rifle.add(slit);
+}
+// UV emitter crystal at muzzle tip
+const emitter = new THREE.Mesh(new THREE.OctahedronGeometry(.042,0), emitterMat);
+emitter.position.set(0,.02,-1.03);
+rifle.add(emitter);
+const emitterCore = new THREE.PointLight(0x7fe3ff, 1.1, 1.6);
+emitterCore.position.copy(emitter.position);
+rifle.add(emitterCore);
+
+// rear pistol grip
+const pgrip = new THREE.Mesh(new THREE.BoxGeometry(.038,.14,.055), rifleMatDark);
+pgrip.position.set(0,-.1,.16);
+pgrip.rotation.x = .32;
+rifle.add(pgrip);
+const trigGuard = new THREE.Mesh(new THREE.TorusGeometry(.032,.006,6,12,Math.PI), rifleMetal);
+trigGuard.position.set(0,-.04,.14);
+trigGuard.rotation.z = Math.PI;
+rifle.add(trigGuard);
+
+// folded bipod under the handguard
+for(const side of [-1,1]){
+  const leg = new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,.16,6), rifleMetal);
+  leg.position.set(side*.03,-.03,-.36);
+  leg.rotation.z = side*.25;
+  rifle.add(leg);
+}
+
+/* ---- mounted scope — the ADS view ---- */
+const scopeGroup = new THREE.Group();
+scopeGroup.position.set(0,.09,-.05);
+rifle.add(scopeGroup);
+// ring mounts
+for(const zp of [.11,-.22]){
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(.026,.006,8,14), rifleMatDark);
+  ring.rotation.x = Math.PI/2;
+  ring.position.set(0,-.015,zp);
+  scopeGroup.add(ring);
+}
+// main scope tube
+const scopeTube = new THREE.Mesh(new THREE.CylinderGeometry(.023,.023,.46,14), rifleMatDark);
+scopeTube.rotation.x = Math.PI/2;
+scopeTube.position.set(0,0,-.06);
+scopeGroup.add(scopeTube);
+// objective bell (front, larger)
+const objBell = new THREE.Mesh(new THREE.CylinderGeometry(.03,.026,.07,14), rifleMatDark);
+objBell.rotation.x = Math.PI/2;
+objBell.position.set(0,0,-.28);
+scopeGroup.add(objBell);
+const objLens = new THREE.Mesh(new THREE.CircleGeometry(.026,16), scopeGlassMat);
+objLens.position.set(0,0,-.316);
+scopeGroup.add(objLens);
+// ocular bell (rear, smaller, closer to eye)
+const ocBell = new THREE.Mesh(new THREE.CylinderGeometry(.026,.023,.05,14), rifleMatDark);
+ocBell.rotation.x = Math.PI/2;
+ocBell.position.set(0,0,.19);
+scopeGroup.add(ocBell);
+const ocLens = new THREE.Mesh(new THREE.CircleGeometry(.023,16), scopeGlassMat);
+ocLens.position.set(0,0,.216);
+scopeGroup.add(ocLens);
+// windage + elevation turrets
+const turretMat = rifleMetal;
+const elevTurret = new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.03,10), turretMat);
+elevTurret.position.set(0,.028,-.06);
+scopeGroup.add(elevTurret);
+const windTurret = new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.03,10), turretMat);
+windTurret.rotation.z = Math.PI/2;
+windTurret.position.set(.028,0,-.14);
+scopeGroup.add(windTurret);
+
+// side vent slats on the receiver (breaks up the flat face)
+for(let i=0;i<3;i++){
+  const slat = new THREE.Mesh(new THREE.BoxGeometry(.005,.018,.08), rifleMetal);
+  slat.position.set(.045,-.005,.02-i*.05);
+  rifle.add(slat);
+}
+
+/* ---- UV torch module — a physical lamp slung under the barrel ---- */
+const torchGroup = new THREE.Group();
+torchGroup.position.set(0,-.04,-.44);
+rifle.add(torchGroup);
+const torchArm = new THREE.Mesh(new THREE.BoxGeometry(.014,.03,.03), rifleMatDark);
+torchArm.position.set(0,.015,0);
+torchGroup.add(torchArm);
+const torchBody = new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,.13,12), rifleMetal);
+torchBody.rotation.x = Math.PI/2;
+torchBody.position.set(0,0,-.05);
+torchGroup.add(torchBody);
+const torchBezel = new THREE.Mesh(new THREE.TorusGeometry(.023,.005,8,14), rifleMatDark);
+torchBezel.rotation.x = Math.PI/2;
+torchBezel.position.set(0,0,-.115);
+torchGroup.add(torchBezel);
+const torchLens = new THREE.Mesh(new THREE.CircleGeometry(.02,14), new THREE.MeshBasicMaterial({color:0xbfeeff, transparent:true, opacity:.85}));
+torchLens.position.set(0,0,-.118);
+torchGroup.add(torchLens);
+const torchLed = new THREE.Mesh(new THREE.SphereGeometry(.004,6,6), new THREE.MeshBasicMaterial({color:0x7fffbf}));
+torchLed.position.set(.018,.01,.01);
+torchGroup.add(torchLed);
+
+// the UV spotlight now physically lives in the torch housing
 const uvLight = new THREE.SpotLight(0xb8ddff, 0, 30, Math.PI/8, .42, 1.7);
-camera.add(uvLight);
+torchGroup.add(uvLight);
+uvLight.position.set(0,0,-.12);
 const uvTarget = new THREE.Object3D();
-uvTarget.position.set(0, 0, -1);
+uvTarget.position.set(0,0,-1);
 camera.add(uvTarget);
 uvLight.target = uvTarget;
+
+// muzzle flash sprite
+const flashTex = (() => {
+  const cv = document.createElement("canvas"); cv.width=cv.height=64;
+  const cx = cv.getContext("2d");
+  const grad = cx.createRadialGradient(32,32,0,32,32,32);
+  grad.addColorStop(0,"rgba(220,245,255,1)");
+  grad.addColorStop(.4,"rgba(140,220,255,.85)");
+  grad.addColorStop(1,"rgba(140,220,255,0)");
+  cx.fillStyle = grad;
+  cx.fillRect(0,0,64,64);
+  return new THREE.CanvasTexture(cv);
+})();
+const muzzleFlash = new THREE.Sprite(new THREE.SpriteMaterial({ map:flashTex, transparent:true, opacity:0, depthTest:false }));
+muzzleFlash.scale.set(.32,.32,.32);
+muzzleFlash.position.set(0,.02,-1.05);
+rifle.add(muzzleFlash);
+
+let recoilT = 0;
+function triggerMuzzleFlash(){
+  recoilT = 1;
+  muzzleFlash.material.opacity = 1;
+  muzzleFlash.material.rotation = Math.random()*Math.PI;
+}
+
+function setAiming(v){
+  aiming = v;
+  rifle.visible = !v;
+  $("scope").style.display = v ? "block" : "none";
+  $("crosshair").style.display = v ? "none" : "block";
+}
 
 /* ============================================================
    PARTICLES / FIREFLIES
@@ -511,6 +959,65 @@ const particles = new THREE.Points(pg, new THREE.PointsMaterial({
   color:0xa8d9b0, size:.075, transparent:true, opacity:.55
 }));
 scene.add(particles);
+
+/* ============================================================
+   LIVE TWINKLING STARFIELD
+   Custom-shader points on a high dome so each star twinkles on
+   its own phase; the dome recenters on the player's XZ each
+   frame (skybox-style) so it never appears to drift as you walk,
+   and it renders unaffected by ground fog (distant sky above it).
+   ============================================================ */
+
+const starCount = 900;
+const starGeo = new THREE.BufferGeometry();
+const starPos = new Float32Array(starCount*3);
+const starPhase = new Float32Array(starCount);
+const starSize = new Float32Array(starCount);
+for(let i=0;i<starCount;i++){
+  const theta = Math.random()*Math.PI*2;
+  const elevAngle = Math.random()*Math.PI*.47 + .04;
+  const r = 250+Math.random()*170;
+  const y = Math.sin(elevAngle)*r;
+  const hr = Math.cos(elevAngle)*r;
+  starPos[i*3] = Math.cos(theta)*hr;
+  starPos[i*3+1] = y;
+  starPos[i*3+2] = Math.sin(theta)*hr;
+  starPhase[i] = Math.random()*Math.PI*2;
+  starSize[i] = 1.1+Math.random()*2.4;
+}
+starGeo.setAttribute("position", new THREE.BufferAttribute(starPos,3));
+starGeo.setAttribute("aPhase", new THREE.BufferAttribute(starPhase,1));
+starGeo.setAttribute("aSize", new THREE.BufferAttribute(starSize,1));
+
+const starMat = new THREE.ShaderMaterial({
+  uniforms:{ uTime:{ value:0 } },
+  vertexShader:`
+    attribute float aPhase;
+    attribute float aSize;
+    uniform float uTime;
+    varying float vTwinkle;
+    void main(){
+      vTwinkle = .38 + .62*abs(sin(uTime*1.15+aPhase));
+      vec4 mv = modelViewMatrix * vec4(position,1.0);
+      gl_PointSize = aSize * vTwinkle * (320.0/-mv.z);
+      gl_Position = projectionMatrix*mv;
+    }
+  `,
+  fragmentShader:`
+    varying float vTwinkle;
+    void main(){
+      vec2 c = gl_PointCoord-0.5;
+      float d = length(c);
+      float a = smoothstep(0.5,0.0,d);
+      gl_FragColor = vec4(vec3(.85,.9,1.0), a*vTwinkle);
+    }
+  `,
+  transparent:true,
+  depthWrite:false,
+  blending:THREE.AdditiveBlending
+});
+const stars = new THREE.Points(starGeo, starMat);
+scene.add(stars);
 
 /* ============================================================
    ANCIENT NAGA
@@ -699,17 +1206,17 @@ function initAudio(){
   reverb.connect(masterGain);
 
   const dry = audioCtx.createGain();
-  dry.gain.value = .55;
+  dry.gain.value = .4;
   dry.connect(masterGain);
 
   const wet = audioCtx.createGain();
-  wet.gain.value = .6;
+  wet.gain.value = .68;
   wet.connect(reverb);
 
   audioCtx._dry = dry;
   audioCtx._wet = wet;
 
-  // low horror drone, always running under the gamelan
+  // low horror drone, always running under the gamelan — kept very soft
   const drone = audioCtx.createOscillator();
   drone.type = "sine";
   drone.frequency.value = 54;
@@ -717,12 +1224,12 @@ function initAudio(){
   drone2.type = "sine";
   drone2.frequency.value = 54*1.5005; // slow beating for unease
   const droneGain = audioCtx.createGain();
-  droneGain.gain.value = .1;
+  droneGain.gain.value = .06;
   const lfo = audioCtx.createOscillator();
   lfo.type = "sine";
-  lfo.frequency.value = .05;
+  lfo.frequency.value = .035;
   const lfoGain = audioCtx.createGain();
-  lfoGain.gain.value = .035;
+  lfoGain.gain.value = .02;
   lfo.connect(lfoGain);
   lfoGain.connect(droneGain.gain);
   drone.connect(droneGain);
@@ -753,17 +1260,17 @@ function playBell(freq, time, vel){
   g2.connect(pan);
   pan.connect(ctx._dry);
   pan.connect(ctx._wet);
-  const peak = .16*vel;
+  const peak = .095*vel;
   g1.gain.setValueAtTime(0, time);
-  g1.gain.linearRampToValueAtTime(peak, time+.012);
-  g1.gain.exponentialRampToValueAtTime(.0001, time+3.4);
+  g1.gain.linearRampToValueAtTime(peak, time+.03);
+  g1.gain.exponentialRampToValueAtTime(.0001, time+4.2);
   g2.gain.setValueAtTime(0, time);
-  g2.gain.linearRampToValueAtTime(peak*.32, time+.012);
-  g2.gain.exponentialRampToValueAtTime(.0001, time+1.6);
+  g2.gain.linearRampToValueAtTime(peak*.2, time+.03);
+  g2.gain.exponentialRampToValueAtTime(.0001, time+1.8);
   osc1.start(time);
-  osc1.stop(time+3.5);
+  osc1.stop(time+4.3);
   osc2.start(time);
-  osc2.stop(time+1.7);
+  osc2.stop(time+1.9);
 }
 
 function playGong(time, vel){
@@ -780,29 +1287,64 @@ function playGong(time, vel){
   g.connect(ctx._dry);
   g.connect(ctx._wet);
   g.gain.setValueAtTime(0, time);
-  g.gain.linearRampToValueAtTime(.3*vel, time+.08);
-  g.gain.exponentialRampToValueAtTime(.0001, time+7.5);
+  g.gain.linearRampToValueAtTime(.16*vel, time+.15);
+  g.gain.exponentialRampToValueAtTime(.0001, time+8.5);
   osc.start(time);
-  osc.stop(time+7.6);
+  osc.stop(time+8.6);
   osc2.start(time);
-  osc2.stop(time+7.6);
+  osc2.stop(time+8.6);
+}
+
+function playShot(uvBoost){
+  if(!audioCtx) return;
+  const ctx = audioCtx;
+  const now = ctx.currentTime;
+  // sub punch
+  const osc = ctx.createOscillator();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(uvBoost?170:130, now);
+  osc.frequency.exponentialRampToValueAtTime(40, now+.09);
+  const og = ctx.createGain();
+  og.gain.setValueAtTime(.5, now);
+  og.gain.exponentialRampToValueAtTime(.001, now+.14);
+  osc.connect(og);
+  og.connect(ctx._dry);
+  osc.start(now);
+  osc.stop(now+.15);
+  // crisp noise crack
+  const bufLen = Math.floor(ctx.sampleRate*.05);
+  const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for(let i=0;i<bufLen;i++) d[i] = (Math.random()*2-1)*Math.pow(1-i/bufLen, 2.2);
+  const noise = ctx.createBufferSource();
+  noise.buffer = buf;
+  const nf = ctx.createBiquadFilter();
+  nf.type = "highpass";
+  nf.frequency.value = uvBoost?1400:900;
+  const ng = ctx.createGain();
+  ng.gain.value = uvBoost?.35:.22;
+  noise.connect(nf);
+  nf.connect(ng);
+  ng.connect(ctx._dry);
+  ng.connect(ctx._wet);
+  noise.start(now);
 }
 
 function scheduleBells(){
   if(!musicOn || !audioCtx) return;
-  const intensity = nagaAwake ? 1.4 : 1;
+  const intensity = nagaAwake ? 1.15 : 1;
   const now = audioCtx.currentTime;
   const note = gamelanScale[Math.floor(Math.random()*gamelanScale.length)] * (Math.random()<.3?2:1);
-  playBell(note, now+.02, .55*intensity+Math.random()*.2);
-  const next = (nagaAwake ? (.5+Math.random()*.7) : (1.1+Math.random()*1.6));
+  playBell(note, now+.02, .4*intensity+Math.random()*.15);
+  const next = (nagaAwake ? (1.2+Math.random()*1.2) : (2.4+Math.random()*2.8));
   belltimer = setTimeout(scheduleBells, next*1000);
 }
 
 function scheduleGong(){
   if(!musicOn || !audioCtx) return;
   const now = audioCtx.currentTime;
-  playGong(now+.02, nagaAwake ? 1.1 : .7);
-  const next = nagaAwake ? (5+Math.random()*3) : (11+Math.random()*9);
+  playGong(now+.02, nagaAwake ? .85 : .55);
+  const next = nagaAwake ? (8+Math.random()*4) : (18+Math.random()*12);
   gongTimer = setTimeout(scheduleGong, next*1000);
 }
 
@@ -810,7 +1352,7 @@ function startMusic(){
   initAudio();
   if(audioCtx.state==="suspended") audioCtx.resume();
   masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
-  masterGain.gain.linearRampToValueAtTime(musicOn?.85:0, audioCtx.currentTime+2.5);
+  masterGain.gain.linearRampToValueAtTime(musicOn?.5:0, audioCtx.currentTime+2.5);
   if(!musicStarted){
     musicStarted = true;
     scheduleBells();
@@ -828,7 +1370,7 @@ function toggleMusic(){
   if(musicOn){
     audioCtx.resume();
     masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
-    masterGain.gain.linearRampToValueAtTime(.85, audioCtx.currentTime+1.2);
+    masterGain.gain.linearRampToValueAtTime(.5, audioCtx.currentTime+1.2);
     if(!belltimer) scheduleBells();
     if(!gongTimer) scheduleGong();
   }else{
@@ -852,14 +1394,14 @@ window.addEventListener("keydown", e => {
 
 window.addEventListener("keydown", e => {
   keys[e.code] = true;
-  if(e.code==="KeyC"){ aiming=true; }
+  if(e.code==="KeyC"){ setAiming(true); }
   if(e.code==="KeyF"){ uvHeld=true; }
   if(e.code==="Space"){ e.preventDefault(); dodge(); }
 });
 
 window.addEventListener("keyup", e => {
   keys[e.code] = false;
-  if(e.code==="KeyC"){ aiming=false; }
+  if(e.code==="KeyC"){ setAiming(false); }
   if(e.code==="KeyF"){ uvHeld=false; }
 });
 
@@ -883,7 +1425,7 @@ window.addEventListener("mouseup", e => {
 
 document.addEventListener("mousemove", e => {
   if(document.pointerLockElement!==canvas) return;
-  const s = aiming ? .0010 : .0025;
+  const s = aiming ? .0005 : .0025;
   yaw -= e.movementX*s;
   pitch -= e.movementY*s;
   pitch = Math.max(-1.25, Math.min(1.25, pitch));
@@ -968,8 +1510,9 @@ if(isMobile){
     e.preventDefault();
     for(const t of e.changedTouches){
       if(t.identifier!==lid) continue;
-      yaw -= (t.clientX-lx)*.004;
-      pitch -= (t.clientY-ly)*.004;
+      const ms = aiming ? .0016 : .004;
+      yaw -= (t.clientX-lx)*ms;
+      pitch -= (t.clientY-ly)*ms;
       pitch = Math.max(-1.25, Math.min(1.25, pitch));
       player.rotation.y = yaw;
       camera.rotation.x = pitch;
@@ -987,8 +1530,8 @@ if(isMobile){
   $("fire").addEventListener("touchstart", e => { e.preventDefault(); fire(); });
   $("uvb").addEventListener("touchstart", e => { e.preventDefault(); uvHeld=true; });
   $("uvb").addEventListener("touchend", e => { e.preventDefault(); uvHeld=false; });
-  $("aim").addEventListener("touchstart", e => { e.preventDefault(); aiming=true; });
-  $("aim").addEventListener("touchend", e => { e.preventDefault(); aiming=false; });
+  $("aim").addEventListener("touchstart", e => { e.preventDefault(); setAiming(true); });
+  $("aim").addEventListener("touchend", e => { e.preventDefault(); setAiming(false); });
   $("sprint").addEventListener("touchstart", e => { e.preventDefault(); sprinting=true; });
   $("sprint").addEventListener("touchend", e => { e.preventDefault(); sprinting=false; });
   $("dodge").addEventListener("touchstart", e => { e.preventDefault(); dodge(); });
@@ -1011,6 +1554,8 @@ function showMsg(s){
 
 function fire(){
   if(!started || !alive || dodgeTime>0) return;
+  triggerMuzzleFlash();
+  playShot(uvHeld);
   const origin = new THREE.Vector3();
   const dir = new THREE.Vector3();
   camera.getWorldPosition(origin);
@@ -1174,9 +1719,23 @@ function update(dt,t){
     stamina = Math.min(100, stamina+dt*15);
   }
 
-  const targetFov = aiming ? 45 : 72;
+  const targetFov = aiming ? 16 : 72;
   camera.fov = THREE.MathUtils.lerp(camera.fov, targetFov, dt*10);
   camera.updateProjectionMatrix();
+
+  // rifle sway + walk bob + ADS + recoil
+  if(recoilT>0) recoilT = Math.max(0, recoilT-dt*5.5);
+  muzzleFlash.material.opacity = recoilT>0.6 ? (recoilT-0.6)/0.4 : 0;
+  const bobA = moving ? t*(sprinting?11:7.5) : t*1.4;
+  const bobAmt = moving ? (sprinting?.028:.016) : .006;
+  const adsX = aiming ? -.32 : 0;
+  const adsY = aiming ? .105 : 0;
+  const adsZ = aiming ? .2 : 0;
+  rifleRest.position.x = THREE.MathUtils.lerp(rifleRest.position.x, .32+adsX+Math.sin(bobA)*bobAmt*.6, dt*12);
+  rifleRest.position.y = THREE.MathUtils.lerp(rifleRest.position.y, -.26+adsY+Math.abs(Math.sin(bobA))*bobAmt+recoilT*.05, dt*12);
+  rifleRest.position.z = THREE.MathUtils.lerp(rifleRest.position.z, -.55+adsZ+recoilT*.08, dt*14);
+  rifle.rotation.x = THREE.MathUtils.lerp(rifle.rotation.x, -recoilT*.22, dt*16);
+  rifle.rotation.z = THREE.MathUtils.lerp(rifle.rotation.z, Math.sin(bobA*.5)*.01, dt*10);
 
   if(uvHeld && uv>0){
     uv = Math.max(0, uv-dt*15);
@@ -1275,6 +1834,8 @@ function animate(){
   const dt = Math.min(clock.getDelta(), .05);
   const t = clock.elapsedTime;
   update(dt, t);
+  starMat.uniforms.uTime.value = t;
+  stars.position.set(player.position.x, 0, player.position.z);
   renderer.render(scene, camera);
 }
 animate();
