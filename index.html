@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Metamorphous&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:wght@800&display=swap" rel="stylesheet">
 <title>NAGALOKA — Realm of the Naga</title>
 <style>
 *{box-sizing:border-box}
@@ -53,7 +53,7 @@ html,body{margin:0;padding:0;overflow:hidden;background:#030706;color:#d9cfb5;fo
 @keyframes scanroll{0%{background-position:0 0}100%{background-position:0 40px}}
 #titleGlitch{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,transparent 48%,rgba(255,255,255,.18) 49%,transparent 51%);opacity:0;animation:glitchbar 5.5s steps(1) infinite}
 @keyframes glitchbar{0%,91%,100%{opacity:0;transform:translateY(-40vh)}92%{opacity:.9;transform:translateY(10vh)}93%{opacity:0}94%{opacity:.7;transform:translateY(70vh)}95%{opacity:0}}
-#title h1{position:relative;font-family:"Metamorphous","Cinzel",serif;font-size:min(15vw,100px);font-weight:normal;letter-spacing:9px;color:#f2f2f2;margin:0;text-shadow:0 0 2px #fff,0 0 24px rgba(255,255,255,.6),3px 0 0 rgba(255,255,255,.15),-3px 0 0 rgba(0,0,0,.4);animation:flicker 3.2s infinite}
+#title h1{position:relative;font-family:"Big Shoulders Stencil","Arial Narrow",sans-serif;font-weight:800;font-size:min(17vw,112px);letter-spacing:6px;color:#f2f2f2;margin:0;text-transform:uppercase;text-shadow:0 0 2px #fff,0 0 24px rgba(255,255,255,.6),3px 0 0 rgba(255,255,255,.15),-3px 0 0 rgba(0,0,0,.4);animation:flicker 3.2s infinite}
 @keyframes flicker{0%,100%{opacity:1}4%{opacity:.82}5%{opacity:1}52%{opacity:1}53%{opacity:.7}55%{opacity:1}}
 #title .sub{font-family:"Courier New",monospace;color:#c9c9c9}
 #title .tape{position:relative;margin-top:6px;font-size:10px;letter-spacing:5px;color:#9a9a9a;opacity:.8}
@@ -205,8 +205,7 @@ const isMobile =
    ============================================================ */
 
 let scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0b1712);
-scene.fog = new THREE.FogExp2(0x0b1712, 0.0105);
+scene.fog = new THREE.FogExp2(0x18262a, 0.0105);
 
 let renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));
@@ -282,6 +281,74 @@ const mossMat = mat(0x254b31);
 const goldMat = mat(0xb18b42,.55,.35);
 const nagaMat = mat(0x244e43,.7,.05);
 const nagaGlowMat = mat(0x68c6b0,.35,.25);
+
+/* ============================================================
+   REALISTIC NIGHT SKY — gradient dome + moon disc
+   Replaces the flat background color with a proper horizon-to-
+   zenith gradient (warm hazy grey-teal near the ground fading to
+   deep navy-black overhead), plus a soft glowing moon positioned
+   along the same direction as the scene's moonlight so the two
+   line up. Fog color is matched to the horizon tone so distant
+   terrain blends into the sky instead of hitting a flat wall.
+   ============================================================ */
+
+const skyGeo = new THREE.SphereGeometry(400, 24, 16);
+const skyMat = new THREE.ShaderMaterial({
+  uniforms:{
+    topColor:{ value:new THREE.Color(0x03060a) },
+    midColor:{ value:new THREE.Color(0x17272a) },
+    bottomColor:{ value:new THREE.Color(0x2c3d38) },
+    offset:{ value:12 },
+    exponent:{ value:.68 }
+  },
+  vertexShader:`
+    varying vec3 vWorldPosition;
+    void main(){
+      vec4 wp = modelMatrix*vec4(position,1.0);
+      vWorldPosition = wp.xyz;
+      gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0);
+    }
+  `,
+  fragmentShader:`
+    uniform vec3 topColor;
+    uniform vec3 midColor;
+    uniform vec3 bottomColor;
+    uniform float offset;
+    uniform float exponent;
+    varying vec3 vWorldPosition;
+    void main(){
+      float h = normalize(vWorldPosition+vec3(0,offset,0)).y;
+      float lo = smoothstep(-.02,.22,h);
+      float hi = pow(max(h,0.0), exponent);
+      vec3 low = mix(bottomColor, midColor, lo);
+      gl_FragColor = vec4(mix(low, topColor, hi), 1.0);
+    }
+  `,
+  side:THREE.BackSide,
+  depthWrite:false,
+  fog:false
+});
+const sky = new THREE.Mesh(skyGeo, skyMat);
+scene.add(sky);
+
+const moonDir = new THREE.Vector3(-55,80,35).normalize();
+const moonGlowTex = (() => {
+  const cv = document.createElement("canvas"); cv.width=cv.height=128;
+  const cx = cv.getContext("2d");
+  const grad = cx.createRadialGradient(64,64,0,64,64,64);
+  grad.addColorStop(0,"rgba(255,255,250,1)");
+  grad.addColorStop(.25,"rgba(225,235,240,.9)");
+  grad.addColorStop(.55,"rgba(160,190,210,.28)");
+  grad.addColorStop(1,"rgba(160,190,210,0)");
+  cx.fillStyle = grad;
+  cx.fillRect(0,0,128,128);
+  return new THREE.CanvasTexture(cv);
+})();
+const moonSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map:moonGlowTex, transparent:true, depthWrite:false, depthTest:false }));
+moonSprite.scale.set(46,46,1);
+moonSprite.position.copy(moonDir.clone().multiplyScalar(370));
+moonSprite.renderOrder = -1;
+scene.add(moonSprite);
 
 /* ============================================================
    GROUND
@@ -1077,68 +1144,117 @@ naga = makeNaga();
 
 const enemies = [];
 function makeSpirit(kind){
-  // kind "hunter" -> small fire-wyrm (aggressive, reddish, faster)
-  // kind "spirit" -> mist wyrmling (paler, teal, slower)
+  // kind "hunter" -> gaunt fire-wraith (aggressive, ember-lit, faster)
+  // kind "spirit" -> pale mist-wraith (paler, teal, slower)
   const isHunter = kind==="hunter";
   const scale = isHunter ? 1.05 : .82;
-  const bodyMat = mat(isHunter ? 0x7a2c1c : 0x275a4e, .55, .15);
-  const bellyMat = mat(isHunter ? 0xb0602c : 0x4c9482, .5, .1);
+  const boneMat = mat(isHunter ? 0x39140c : 0x142a24, .75, .05);
+  const skinMat = mat(isHunter ? 0x5c1f12 : 0x1f3f36, .7, .05);
+  const socketMat = new THREE.MeshBasicMaterial({ color:0x000000 });
   const wingMat = new THREE.MeshStandardMaterial({
-    color: isHunter ? 0x3a1409 : 0x0f2e26,
-    roughness:.6, metalness:.05,
-    transparent:true, opacity:.5, side:THREE.DoubleSide
+    color: isHunter ? 0x2a0d06 : 0x0a1f1a,
+    roughness:.7, metalness:.05,
+    transparent:true, opacity:.4, side:THREE.DoubleSide
   });
-  const eyeMat = new THREE.MeshBasicMaterial({ color: isHunter ? 0xff7a35 : 0x8fe6cf });
+  const eyeMat = new THREE.MeshBasicMaterial({ color: isHunter ? 0xff5a1f : 0x8fe6cf });
+  const toothMat = mat(0xcfc9b8, .5, 0);
 
   const g = new THREE.Group();
+  g.rotation.x = .18; // permanent hunch
 
-  // serpentine body, tapering toward the tail
-  const segCount = 5;
+  // gaunt spine — tapering, jagged cone segments instead of smooth spheres
+  const segCount = 6;
+  const spineY = [];
   for(let i=0;i<segCount;i++){
-    const r = (.4 - i*.055) * scale;
-    const seg = new THREE.Mesh(new THREE.SphereGeometry(Math.max(r,.06), 10, 8), i===0?bellyMat:bodyMat);
-    seg.position.set(0, .04*scale, i*.42*scale);
-    seg.scale.set(1, .82, 1.35);
+    const r = (.26 - i*.03) * scale;
+    const seg = new THREE.Mesh(new THREE.ConeGeometry(Math.max(r,.045), .34*scale, 6), i===0?skinMat:boneMat);
+    seg.rotation.x = Math.PI/2;
+    const y = .18*scale - i*.02*scale;
+    seg.position.set(0, y, i*.34*scale);
+    seg.scale.set(1, 1, 1.15);
     seg.castShadow = true;
     g.add(seg);
+    spineY.push(y);
+    // protruding ribs on mid-segments
+    if(i>0 && i<segCount-1 && i%2===0){
+      for(const side of [-1,1]){
+        const rib = new THREE.Mesh(new THREE.ConeGeometry(.02*scale,.22*scale,4), boneMat);
+        rib.rotation.z = side*1.15;
+        rib.position.set(side*.14*scale, y-.02*scale, i*.34*scale);
+        g.add(rib);
+      }
+    }
   }
 
-  // head + snout
-  const head = new THREE.Mesh(new THREE.ConeGeometry(.34*scale, .72*scale, 8), bodyMat);
-  head.rotation.x = Math.PI/2;
-  head.position.set(0, .08*scale, -.36*scale);
-  head.castShadow = true;
-  g.add(head);
-
-  // horns
-  for(const side of [-1,1]){
-    const horn = new THREE.Mesh(new THREE.ConeGeometry(.055*scale, .3*scale, 5), bodyMat);
-    horn.position.set(side*.13*scale, .34*scale, -.14*scale);
-    horn.rotation.z = side*.4;
-    horn.rotation.x = -.3;
-    g.add(horn);
+  // elongated skull with hollow sockets, pinprick glow, and an underbite of teeth
+  const skull = new THREE.Mesh(new THREE.ConeGeometry(.16*scale, .58*scale, 7), skinMat);
+  skull.rotation.x = Math.PI/2;
+  skull.scale.set(1,.72,1);
+  skull.position.set(0, .22*scale, -.34*scale);
+  skull.castShadow = true;
+  g.add(skull);
+  const jaw = new THREE.Mesh(new THREE.ConeGeometry(.09*scale,.22*scale,6), boneMat);
+  jaw.rotation.x = -Math.PI/2.15;
+  jaw.position.set(0,.11*scale,-.5*scale);
+  g.add(jaw);
+  for(let i=0;i<4;i++){
+    const tooth = new THREE.Mesh(new THREE.ConeGeometry(.012*scale,.045*scale,4), toothMat);
+    tooth.rotation.x = Math.PI;
+    tooth.position.set((i-1.5)*.028*scale, .155*scale, -.56*scale+ (i%2)*.01);
+    g.add(tooth);
   }
-
-  // glowing eyes
   for(const side of [-1,1]){
-    const e = new THREE.Mesh(new THREE.SphereGeometry(.06*scale, 6, 6), eyeMat);
-    e.position.set(side*.13*scale, .1*scale, -.66*scale);
+    const socket = new THREE.Mesh(new THREE.SphereGeometry(.045*scale,7,6), socketMat);
+    socket.position.set(side*.075*scale,.25*scale,-.55*scale);
+    g.add(socket);
+    const e = new THREE.Mesh(new THREE.SphereGeometry(.015*scale,6,6), eyeMat);
+    e.position.set(side*.075*scale,.25*scale,-.585*scale);
     g.add(e);
   }
 
-  // wings (animated in update loop)
+  // gaunt clawed forelimbs, reaching forward
+  const limbs = [];
+  for(const side of [-1,1]){
+    const limb = new THREE.Group();
+    const upper = new THREE.Mesh(new THREE.CylinderGeometry(.018*scale,.024*scale,.32*scale,6), boneMat);
+    upper.rotation.x = -.9;
+    upper.position.set(0,0,-.1*scale);
+    limb.add(upper);
+    const lower = new THREE.Mesh(new THREE.CylinderGeometry(.014*scale,.02*scale,.28*scale,6), boneMat);
+    lower.rotation.x = -1.9;
+    lower.position.set(0,-.16*scale,-.32*scale);
+    limb.add(lower);
+    for(let c=0;c<3;c++){
+      const claw = new THREE.Mesh(new THREE.ConeGeometry(.009*scale,.09*scale,4), toothMat);
+      claw.rotation.x = -2.3;
+      claw.position.set((c-1)*.025*scale,-.28*scale,-.46*scale);
+      limb.add(claw);
+    }
+    limb.position.set(side*.13*scale,.12*scale,0);
+    g.add(limb);
+    limbs.push(limb);
+  }
+
+  // tattered wings — three ragged shard planes per side instead of one smooth membrane
   const wings = [];
   for(const side of [-1,1]){
-    const wing = new THREE.Mesh(new THREE.PlaneGeometry(.95*scale, .58*scale), wingMat);
-    wing.position.set(side*.28*scale, .22*scale, .15*scale);
-    wing.rotation.y = side*.55;
-    g.add(wing);
-    wings.push(wing);
+    const wingGroup = new THREE.Group();
+    for(let s=0;s<3;s++){
+      const shard = new THREE.Mesh(new THREE.PlaneGeometry(.4*scale-(s*.09*scale), .5*scale-(s*.12*scale)), wingMat);
+      shard.position.set(side*(.18+s*.16)*scale, .05-s*.09*scale, .1+s*.08*scale);
+      shard.rotation.y = side*(.5+s*.18);
+      shard.rotation.z = side*.12*(s-1);
+      wingGroup.add(shard);
+    }
+    wingGroup.position.set(side*.1*scale,.2*scale,.1*scale);
+    g.add(wingGroup);
+    wings.push(wingGroup);
   }
 
   g.userData.wings = wings;
-  g.userData.eyeGlow = new THREE.PointLight(isHunter?0xff6a30:0x6fe0c0, isHunter?.9:.6, 4.5);
-  g.userData.eyeGlow.position.set(0,.15*scale,-.6*scale);
+  g.userData.limbs = limbs;
+  g.userData.eyeGlow = new THREE.PointLight(isHunter?0xff5522:0x6fe0c0, isHunter?.85:.55, 4.2);
+  g.userData.eyeGlow.position.set(0,.25*scale,-.55*scale);
   g.add(g.userData.eyeGlow);
 
   return g;
@@ -1158,7 +1274,10 @@ function spawnSpirit(){
     hp: kind==="hunter" ? 55 : 35,
     speed: kind==="hunter" ? 3.7 : 2.4,
     last:0,
-    phase:Math.random()*10
+    phase:Math.random()*10,
+    jitterSeed:Math.random()*100,
+    screeched:false,
+    lurchT:0
   });
 }
 for(let i=0;i<5;i++){
@@ -1293,6 +1412,35 @@ function playGong(time, vel){
   osc.stop(time+8.6);
   osc2.start(time);
   osc2.stop(time+8.6);
+}
+
+function playScreech(hunter){
+  if(!audioCtx) return;
+  const ctx = audioCtx;
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = "sawtooth";
+  const startF = hunter ? 900+Math.random()*300 : 650+Math.random()*250;
+  osc.frequency.setValueAtTime(startF, now);
+  osc.frequency.exponentialRampToValueAtTime(startF*.35, now+.5);
+  osc.frequency.exponentialRampToValueAtTime(startF*.9, now+.7);
+  const filt = ctx.createBiquadFilter();
+  filt.type = "bandpass";
+  filt.frequency.value = hunter?1400:1000;
+  filt.Q.value = 4;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0, now);
+  g.gain.linearRampToValueAtTime(.14, now+.06);
+  g.gain.exponentialRampToValueAtTime(.0001, now+.75);
+  const pan = ctx.createStereoPanner();
+  pan.pan.value = Math.max(-1,Math.min(1,(Math.random()-.5)*1.6));
+  osc.connect(filt);
+  filt.connect(g);
+  g.connect(pan);
+  pan.connect(ctx._dry);
+  pan.connect(ctx._wet);
+  osc.start(now);
+  osc.stop(now+.8);
 }
 
 function playShot(uvBoost){
@@ -1770,21 +1918,39 @@ function update(dt,t){
     const dx = player.position.x - e.g.position.x;
     const dz = player.position.z - e.g.position.z;
     const d = Math.hypot(dx, dz) || 1;
+    if(e.lurchT>0) e.lurchT -= dt;
     if(d<28){
-      e.g.position.x += dx/d*e.speed*dt;
-      e.g.position.z += dz/d*e.speed*dt;
+      // unsettling stutter-lurch: brief bursts of speed instead of smooth glide
+      if(e.lurchT<=0 && Math.random()<dt*.6){ e.lurchT = .18+Math.random()*.22; }
+      const lurch = e.lurchT>0 ? 2.6 : 1;
+      e.g.position.x += dx/d*e.speed*lurch*dt;
+      e.g.position.z += dz/d*e.speed*lurch*dt;
+      // high-frequency twitch/jitter so it never glides cleanly
+      e.g.position.x += Math.sin(t*23+e.jitterSeed)*.006;
+      e.g.position.z += Math.cos(t*19+e.jitterSeed)*.006;
       if(d<2.3 && t-e.last>1.2){
         damage(e.kind==="hunter" ? 16 : 9);
         e.last=t;
       }
+      if(!e.screeched && d<15){
+        e.screeched = true;
+        playScreech(e.kind==="hunter");
+      }
     }
-    e.g.position.y = terrainHeight(e.g.position.x, e.g.position.z) + 1.25 + Math.sin(t*3+e.phase)*.12;
+    if(d>=28){ e.screeched = false; }
+    e.g.position.y = terrainHeight(e.g.position.x, e.g.position.z) + 1.15 + Math.sin(t*3+e.phase)*.1;
     e.g.rotation.y = Math.atan2(dx, dz) + Math.PI;
     const wings = e.g.userData.wings;
     if(wings){
-      const flap = Math.sin(t*(e.kind==="hunter"?14:9)+e.phase)*.55;
+      const flap = Math.sin(t*(e.kind==="hunter"?15:10)+e.phase)*.5;
       wings[0].rotation.z = flap;
       wings[1].rotation.z = -flap;
+    }
+    const limbs = e.g.userData.limbs;
+    if(limbs){
+      const twitch = Math.sin(t*6+e.jitterSeed)*.12 + (e.lurchT>0?.3:0);
+      limbs[0].rotation.z = .15+twitch;
+      limbs[1].rotation.z = -.15-twitch;
     }
   }
 
