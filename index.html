@@ -1,2022 +1,4335 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil:wght@800&display=swap" rel="stylesheet">
-<title>NAGALOKA — Realm of the Naga</title>
-<style>
-*{box-sizing:border-box}
-:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-html,body{margin:0;padding:0;overflow:hidden;background:#030706;color:#d9cfb5;font-family:"Courier New",monospace;touch-action:none;height:100%}
-#c{display:block;width:100vw;height:100vh}
-#ui{position:fixed;inset:0;pointer-events:none;z-index:20}
-#crosshair{position:absolute;left:50%;top:50%;width:7px;height:7px;border:1px solid rgba(225,215,185,.75);border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 10px #000}
-#scope{position:fixed;inset:0;z-index:22;display:none;pointer-events:none}
-#scope .mask{position:absolute;left:50%;top:50%;width:58vmin;height:58vmin;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 9999px #000;border:2px solid rgba(6,10,8,.9)}
-#scope .tint{position:absolute;left:50%;top:50%;width:58vmin;height:58vmin;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(140,210,190,.05) 0%,rgba(0,0,0,.3) 72%,rgba(0,0,0,.55) 100%)}
-#scope .vline{position:absolute;left:50%;top:calc(50% - 29vmin);width:1px;height:58vmin;background:rgba(210,235,225,.8);transform:translateX(-50%)}
-#scope .hline{position:absolute;top:50%;left:calc(50% - 29vmin);height:1px;width:58vmin;background:rgba(210,235,225,.8);transform:translateY(-50%)}
-#scope .dot{position:absolute;left:50%;top:50%;width:4px;height:4px;border-radius:50%;background:#d9f5ea;transform:translate(-50%,-50%);box-shadow:0 0 6px rgba(217,245,234,.8)}
-#scope .tick{position:absolute;background:rgba(210,235,225,.75);width:1px;height:9px;top:calc(50% - 4px)}
-#scope .t1{left:calc(50% - 10vmin)}
-#scope .t2{left:calc(50% + 10vmin)}
-#scope .t3{left:calc(50% - 20vmin)}
-#scope .t4{left:calc(50% + 20vmin)}
-#scope .zoomLabel{position:absolute;left:50%;bottom:calc(50% - 27vmin);transform:translateX(-50%);color:rgba(210,235,225,.7);font-size:10px;letter-spacing:2px}
-#msg{position:absolute;top:16%;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .5s;text-align:center;letter-spacing:3px;text-shadow:0 2px 10px #000;max-width:90%}
-#quest{position:absolute;top:calc(22px + env(safe-area-inset-top,0px));left:22px;text-shadow:0 2px 8px #000}
-#quest .qtitle{font-size:15px;color:#d7b76c;letter-spacing:2px}
-#quest .qline{font-size:11px;opacity:.75;margin-top:7px;letter-spacing:1px}
-#distance{position:absolute;top:calc(22px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);font-size:12px;letter-spacing:3px;text-shadow:0 2px 8px #000}
-#hud{position:absolute;left:20px;right:20px;bottom:calc(18px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;align-items:flex-end}
-.bar{width:170px;margin-top:8px}
-.label{font-size:9px;letter-spacing:2px;opacity:.65;margin-bottom:3px}
-.bg{height:8px;border:1px solid rgba(220,205,170,.3);background:rgba(0,0,0,.35)}
-.fill{height:100%;transition:width .12s}
-#hp{background:linear-gradient(90deg,#641d1d,#c84a45)}
-#st{background:linear-gradient(90deg,#315327,#8dc95a)}
-#uv{background:linear-gradient(90deg,#2d4f82,#9bd5ff)}
-#ammo{font-size:21px;color:#e9ddbd;text-align:right}
-#status{text-align:right;font-size:9px;letter-spacing:2px;opacity:.6;margin-top:5px}
-#death{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at center,#172018 0%,#020403 72%);cursor:pointer}
-.sub{margin-top:10px;opacity:.6;letter-spacing:6px;font-size:12px}
-.restart{margin-top:52px;padding:15px 34px;border:1px solid #705e3d;color:#d3b56e;letter-spacing:4px;animation:pulse 2s infinite}
-@keyframes pulse{50%{opacity:.35}}
 
-/* ---- retro 90s CRT title / loading screen ---- */
-#title{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:#000;cursor:pointer;overflow:hidden;filter:grayscale(1) contrast(1.25)}
-#title::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,#3a3a3a 0%,#000 78%);opacity:.9}
-#title::after{content:"";position:absolute;inset:-2px;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0px,rgba(255,255,255,.05) 1px,transparent 2px,transparent 4px);mix-blend-mode:overlay;animation:scanroll 6s linear infinite}
-@keyframes scanroll{0%{background-position:0 0}100%{background-position:0 40px}}
-#titleGlitch{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,transparent 48%,rgba(255,255,255,.18) 49%,transparent 51%);opacity:0;animation:glitchbar 5.5s steps(1) infinite}
-@keyframes glitchbar{0%,91%,100%{opacity:0;transform:translateY(-40vh)}92%{opacity:.9;transform:translateY(10vh)}93%{opacity:0}94%{opacity:.7;transform:translateY(70vh)}95%{opacity:0}}
-#title h1{position:relative;font-family:"Big Shoulders Stencil","Arial Narrow",sans-serif;font-weight:800;font-size:min(17vw,112px);letter-spacing:6px;color:#f2f2f2;margin:0;text-transform:uppercase;text-shadow:0 0 2px #fff,0 0 24px rgba(255,255,255,.6),3px 0 0 rgba(255,255,255,.15),-3px 0 0 rgba(0,0,0,.4);animation:flicker 3.2s infinite}
-@keyframes flicker{0%,100%{opacity:1}4%{opacity:.82}5%{opacity:1}52%{opacity:1}53%{opacity:.7}55%{opacity:1}}
-#title .sub{font-family:"Courier New",monospace;color:#c9c9c9}
-#title .tape{position:relative;margin-top:6px;font-size:10px;letter-spacing:5px;color:#9a9a9a;opacity:.8}
-#title .tape::before{content:"● REC "}
-#title .tape::before{color:#e2e2e2;animation:pulse 1.4s infinite}
-.start{position:relative;margin-top:52px;padding:15px 34px;border:2px solid #ececec;color:#f2f2f2;letter-spacing:4px;animation:pulse 2s infinite;background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(255,255,255,.04) 6px,rgba(255,255,255,.04) 12px)}
-#loadbar{position:relative;margin-top:34px;width:min(70vw,340px);height:10px;border:1px solid #d8d8d8}
-#loadbar i{display:block;height:100%;width:0%;background:#e8e8e8;animation:loadfill 2.4s ease-in-out infinite}
-@keyframes loadfill{0%{width:0%}45%{width:78%}60%{width:60%}100%{width:100%}}
-#loadlabel{margin-top:10px;font-size:9px;letter-spacing:3px;color:#b6b6b6}
-#death{display:none;background:rgba(0,0,0,.94);z-index:200}
-#death h2{font-size:27px;letter-spacing:6px;color:#9b3434;font-weight:normal}
-#death .restart{pointer-events:all;cursor:pointer;margin-top:25px}
-#controls{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-size:10px;opacity:.45;letter-spacing:1px;white-space:nowrap}
-#mobile{display:none;position:fixed;inset:0;z-index:30;pointer-events:none}
-#joy{position:absolute;left:25px;bottom:55px;width:118px;height:118px;border:2px solid rgba(220,210,185,.25);border-radius:50%;pointer-events:all}
-#knob{position:absolute;left:37px;top:37px;width:40px;height:40px;border-radius:50%;background:rgba(210,200,175,.32)}
-.btn{position:absolute;width:70px;height:70px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;font-size:10px;letter-spacing:1px;pointer-events:all}
-#fire{right:25px;bottom:55px;border:2px solid rgba(210,70,70,.55);background:rgba(130,30,30,.18)}
-#uvb{right:48px;bottom:140px;border:2px solid rgba(120,190,255,.45);background:rgba(60,110,170,.14)}
-#aim{right:130px;bottom:70px;border:2px solid rgba(210,200,175,.35);background:rgba(210,200,175,.1)}
-#sprint{left:155px;bottom:70px;border:2px solid rgba(150,210,100,.3);background:rgba(80,120,50,.1)}
-#dodge{right:125px;bottom:150px;border:2px solid rgba(210,180,100,.35);background:rgba(150,110,40,.1)}
-#vignette{position:fixed;inset:0;z-index:15;pointer-events:none;box-shadow:inset 0 0 14vw 4vw rgba(0,0,0,.58);transition:box-shadow .3s}
-#sound{position:fixed;top:calc(18px + env(safe-area-inset-top,0px));right:20px;z-index:25;pointer-events:all;cursor:pointer;font-size:11px;letter-spacing:2px;color:#d3b56e;border:1px solid rgba(211,181,110,.4);padding:8px 12px;background:rgba(10,14,10,.4);text-shadow:0 2px 6px #000}
-#damage{position:fixed;inset:0;z-index:16;pointer-events:none;background:rgba(170,20,20,.4);opacity:0;transition:opacity .15s}
-#boss{position:absolute;left:50%;top:calc(8px + env(safe-area-inset-top,0px));transform:translateX(-50%);width:min(420px,55vw);display:none}
-#boss .bname{text-align:center;color:#c9a86a;font-size:11px;letter-spacing:4px;margin-bottom:4px}
-#boss .bbg{height:7px;border:1px solid rgba(210,180,110,.5);background:rgba(0,0,0,.5)}
-#boss .bfill{height:100%;background:linear-gradient(90deg,#641b1b,#d59a47)}
-@media(max-width:700px){
-  #controls{display:none}
-  #mobile{display:block}
-  #quest{top:12px;left:12px}
-  #quest .qtitle{font-size:11px}
-  #quest .qline{font-size:9px}
-  #hud{left:12px;right:12px;bottom:12px}
-  .bar{width:125px}
-  #ammo{font-size:18px}
-  #sound{top:12px;right:12px;font-size:9px;padding:6px 10px}
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+
+<title>WHITEOUT — FROZEN PROTOCOL</title>
+
+<style>
+
+*{box-sizing:border-box}
+
+html,body{
+
+  margin:0;
+
+  width:100%;
+
+  height:100%;
+
+  overflow:hidden;
+
+  background:#05090d;
+
+  color:#e8f1f4;
+
+  font-family:"Courier New",monospace;
+
+  touch-action:none;
+
 }
+
+#c{width:100vw;height:100vh;display:block}
+
+#ui{
+
+  position:fixed;
+
+  inset:0;
+
+  pointer-events:none;
+
+  z-index:20;
+
+}
+
+#crosshair{
+
+  position:absolute;
+
+  left:50%;
+
+  top:50%;
+
+  width:18px;
+
+  height:18px;
+
+  transform:translate(-50%,-50%);
+
+}
+
+#crosshair:before,
+
+#crosshair:after{
+
+  content:"";
+
+  position:absolute;
+
+  background:rgba(225,245,255,.9);
+
+}
+
+#crosshair:before{
+
+  left:8px;
+
+  top:0;
+
+  width:2px;
+
+  height:18px;
+
+}
+
+#crosshair:after{
+
+  left:0;
+
+  top:8px;
+
+  width:18px;
+
+  height:2px;
+
+}
+
+#title{
+
+  position:fixed;
+
+  inset:0;
+
+  z-index:100;
+
+  display:flex;
+
+  flex-direction:column;
+
+  justify-content:center;
+
+  align-items:center;
+
+  text-align:center;
+
+  background:
+
+    radial-gradient(circle at center,#23323b 0%,#080d11 45%,#020305 100%);
+
+  overflow:hidden;
+
+  cursor:pointer;
+
+}
+
+#title:after{
+
+  content:"";
+
+  position:absolute;
+
+  inset:0;
+
+  background:
+
+    repeating-linear-gradient(
+
+      0deg,
+
+      rgba(255,255,255,.035) 0px,
+
+      rgba(255,255,255,.035) 1px,
+
+      transparent 2px,
+
+      transparent 5px
+
+    );
+
+  pointer-events:none;
+
+}
+
+#title h1{
+
+  position:relative;
+
+  z-index:2;
+
+  margin:0;
+
+  font-family:Impact,"Arial Narrow",sans-serif;
+
+  font-size:min(18vw,120px);
+
+  letter-spacing:9px;
+
+  color:#eef8fb;
+
+  text-shadow:
+
+    0 0 4px #fff,
+
+    0 0 25px rgba(150,220,255,.4);
+
+}
+
+.titleSub{
+
+  position:relative;
+
+  z-index:2;
+
+  margin-top:5px;
+
+  color:#9db5c0;
+
+  letter-spacing:7px;
+
+  font-size:12px;
+
+}
+
+.classified{
+
+  position:relative;
+
+  z-index:2;
+
+  margin-top:30px;
+
+  color:#8298a1;
+
+  font-size:9px;
+
+  letter-spacing:4px;
+
+}
+
+.start{
+
+  position:relative;
+
+  z-index:2;
+
+  margin-top:55px;
+
+  border:1px solid #a8d8e8;
+
+  padding:15px 30px;
+
+  color:#e8f8ff;
+
+  letter-spacing:4px;
+
+  background:rgba(130,190,215,.08);
+
+  animation:pulse 2s infinite;
+
+}
+
+@keyframes pulse{
+
+  50%{opacity:.35}
+
+}
+
+#load{
+
+  position:relative;
+
+  z-index:2;
+
+  margin-top:22px;
+
+  width:min(65vw,330px);
+
+  height:6px;
+
+  border:1px solid rgba(190,220,230,.5);
+
+}
+
+#load i{
+
+  display:block;
+
+  height:100%;
+
+  width:100%;
+
+  background:#c9edf8;
+
+  animation:load 2.5s infinite;
+
+}
+
+@keyframes load{
+
+  0%{width:0}
+
+  70%{width:88%}
+
+  100%{width:100%}
+
+}
+
+#mission{
+
+  position:absolute;
+
+  top:22px;
+
+  left:22px;
+
+  text-shadow:0 2px 8px #000;
+
+}
+
+#missionTitle{
+
+  color:#b9e4f1;
+
+  font-size:13px;
+
+  letter-spacing:3px;
+
+}
+
+#missionText{
+
+  margin-top:7px;
+
+  color:#9aabb1;
+
+  font-size:10px;
+
+  letter-spacing:1px;
+
+}
+
+#location{
+
+  position:absolute;
+
+  top:22px;
+
+  left:50%;
+
+  transform:translateX(-50%);
+
+  font-size:10px;
+
+  letter-spacing:4px;
+
+  color:#a9c3cc;
+
+  text-shadow:0 2px 8px #000;
+
+}
+
+#hud{
+
+  position:absolute;
+
+  left:20px;
+
+  right:20px;
+
+  bottom:20px;
+
+  display:flex;
+
+  justify-content:space-between;
+
+  align-items:flex-end;
+
+}
+
+.label{
+
+  font-size:9px;
+
+  letter-spacing:2px;
+
+  color:#9caeb4;
+
+  margin-bottom:4px;
+
+}
+
+.bar{
+
+  width:170px;
+
+  height:8px;
+
+  border:1px solid rgba(210,235,245,.3);
+
+  background:rgba(0,0,0,.45);
+
+}
+
+.fill{
+
+  height:100%;
+
+  transition:width .12s;
+
+}
+
+#health{background:linear-gradient(90deg,#4d1616,#dc5555)}
+
+#stamina{background:linear-gradient(90deg,#315e70,#9bdaf0)}
+
+#ammo{
+
+  text-align:right;
+
+  font-size:27px;
+
+  color:#e9f6fa;
+
+}
+
+#mag{
+
+  font-size:9px;
+
+  text-align:right;
+
+  letter-spacing:2px;
+
+  color:#899ba2;
+
+}
+
+#message{
+
+  position:absolute;
+
+  top:17%;
+
+  left:50%;
+
+  transform:translateX(-50%);
+
+  text-align:center;
+
+  letter-spacing:4px;
+
+  font-size:13px;
+
+  opacity:0;
+
+  transition:opacity .3s;
+
+  text-shadow:0 2px 12px #000;
+
+}
+
+#damage{
+
+  position:fixed;
+
+  inset:0;
+
+  z-index:25;
+
+  pointer-events:none;
+
+  background:rgba(160,20,25,.45);
+
+  opacity:0;
+
+  transition:opacity .15s;
+
+}
+
+#vignette{
+
+  position:fixed;
+
+  inset:0;
+
+  z-index:15;
+
+  pointer-events:none;
+
+  box-shadow:inset 0 0 15vw 5vw rgba(0,0,0,.7);
+
+}
+
+#boss{
+
+  display:none;
+
+  position:absolute;
+
+  top:65px;
+
+  left:50%;
+
+  transform:translateX(-50%);
+
+  width:min(430px,65vw);
+
+}
+
+#bossName{
+
+  text-align:center;
+
+  font-size:10px;
+
+  letter-spacing:4px;
+
+  color:#b9e1ea;
+
+  margin-bottom:5px;
+
+}
+
+#bossBG{
+
+  height:8px;
+
+  border:1px solid rgba(210,235,245,.4);
+
+  background:#050708;
+
+}
+
+#bossFill{
+
+  height:100%;
+
+  background:linear-gradient(90deg,#611d25,#e7d9c1);
+
+}
+
+#scope{
+
+  display:none;
+
+  position:fixed;
+
+  inset:0;
+
+  z-index:30;
+
+  pointer-events:none;
+
+}
+
+.scopeCircle{
+
+  position:absolute;
+
+  width:64vmin;
+
+  height:64vmin;
+
+  left:50%;
+
+  top:50%;
+
+  transform:translate(-50%,-50%);
+
+  border-radius:50%;
+
+  box-shadow:0 0 0 9999px #020405;
+
+  border:2px solid rgba(205,235,245,.75);
+
+  background:
+
+    radial-gradient(
+
+      circle,
+
+      rgba(140,200,215,.05),
+
+      rgba(0,0,0,.15) 60%,
+
+      rgba(0,0,0,.55)
+
+    );
+
+}
+
+.scopeV{
+
+  position:absolute;
+
+  left:50%;
+
+  top:18%;
+
+  width:1px;
+
+  height:64%;
+
+  background:rgba(205,235,245,.65);
+
+}
+
+.scopeH{
+
+  position:absolute;
+
+  top:50%;
+
+  left:18%;
+
+  width:64%;
+
+  height:1px;
+
+  background:rgba(205,235,245,.65);
+
+}
+
+.scopeDot{
+
+  position:absolute;
+
+  left:50%;
+
+  top:50%;
+
+  width:5px;
+
+  height:5px;
+
+  border-radius:50%;
+
+  background:#e4ffff;
+
+  transform:translate(-50%,-50%);
+
+  box-shadow:0 0 8px #b8efff;
+
+}
+
+.scopeText{
+
+  position:absolute;
+
+  bottom:20%;
+
+  left:50%;
+
+  transform:translateX(-50%);
+
+  color:#b8d7df;
+
+  font-size:9px;
+
+  letter-spacing:3px;
+
+}
+
+#mobile{
+
+  display:none;
+
+  position:fixed;
+
+  inset:0;
+
+  z-index:40;
+
+  pointer-events:none;
+
+}
+
+#joy{
+
+  position:absolute;
+
+  left:25px;
+
+  bottom:50px;
+
+  width:120px;
+
+  height:120px;
+
+  border:2px solid rgba(200,230,240,.25);
+
+  border-radius:50%;
+
+  pointer-events:all;
+
+}
+
+#knob{
+
+  position:absolute;
+
+  left:38px;
+
+  top:38px;
+
+  width:40px;
+
+  height:40px;
+
+  border-radius:50%;
+
+  background:rgba(200,230,240,.28);
+
+}
+
+.btn{
+
+  position:absolute;
+
+  width:70px;
+
+  height:70px;
+
+  border-radius:50%;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  text-align:center;
+
+  font-size:9px;
+
+  letter-spacing:1px;
+
+  pointer-events:all;
+
+  user-select:none;
+
+}
+
+#fire{
+
+  right:25px;
+
+  bottom:50px;
+
+  border:2px solid rgba(220,90,90,.6);
+
+  background:rgba(130,20,20,.2);
+
+}
+
+#aim{
+
+  right:120px;
+
+  bottom:70px;
+
+  border:2px solid rgba(190,220,235,.35);
+
+}
+
+#reload{
+
+  right:45px;
+
+  bottom:135px;
+
+  border:2px solid rgba(210,200,150,.35);
+
+}
+
+#run{
+
+  left:155px;
+
+  bottom:60px;
+
+  border:2px solid rgba(140,200,220,.3);
+
+}
+
+#knife{
+
+  right:130px;
+
+  bottom:150px;
+
+  border:2px solid rgba(220,190,130,.3);
+
+}
+
+#sound{
+
+  position:fixed;
+
+  right:18px;
+
+  top:18px;
+
+  z-index:110;
+
+  padding:7px 10px;
+
+  border:1px solid rgba(190,220,235,.3);
+
+  color:#a9cbd5;
+
+  font-size:9px;
+
+  letter-spacing:2px;
+
+  pointer-events:all;
+
+}
+
+#death{
+
+  display:none;
+
+  position:fixed;
+
+  inset:0;
+
+  z-index:200;
+
+  background:rgba(2,4,6,.95);
+
+  align-items:center;
+
+  justify-content:center;
+
+  flex-direction:column;
+
+  text-align:center;
+
+}
+
+#death h2{
+
+  color:#c85c62;
+
+  font-size:25px;
+
+  letter-spacing:5px;
+
+}
+
+#restart{
+
+  margin-top:30px;
+
+  padding:15px 30px;
+
+  border:1px solid #a8d8e8;
+
+  letter-spacing:3px;
+
+}
+
+@media(max-width:700px){
+
+  #mobile{display:block}
+
+  #mission{left:12px;top:12px}
+
+  #missionTitle{font-size:10px}
+
+  #missionText{font-size:8px}
+
+  #location{top:13px;font-size:8px}
+
+  #hud{left:12px;right:12px;bottom:12px}
+
+  .bar{width:120px}
+
+  #ammo{font-size:20px}
+
+  #sound{top:10px;right:10px}
+
+}
+
 </style>
+
 </head>
+
 <body>
+
 <canvas id="c"></canvas>
-<div id="sound">♪ SOUND: ON</div>
+
+<div id="sound">♪ SOUND ON</div>
+
 <div id="title">
-  <div id="titleGlitch"></div>
-  <h1>NAGALOKA</h1>
-  <div class="sub">〜 REALM OF THE NAGA 〜</div>
-  <div class="tape">SIGNAL LOCKED</div>
-  <div id="loadbar"><i></i></div>
-  <div id="loadlabel">LOADING TAPE... PRESS TO PLAY</div>
-  <div class="start" id="start">▸ ENTER THE JUNGLE</div>
+
+  <h1>WHITEOUT</h1>
+
+  <div class="titleSub">FROZEN PROTOCOL</div>
+
+  <div class="classified">CLASSIFIED // NORTHERN SECTOR // 03:17 AM</div>
+
+  <div id="load"><i></i></div>
+
+  <div class="start" id="start">▸ DEPLOY INTO THE WHITEOUT</div>
+
 </div>
+
 <div id="death">
-  <h2>THE JUNGLE HAS CLAIMED YOU</h2>
-  <div class="restart" id="restart">▸ RETURN TO THE MIST</div>
+
+  <h2>FROZEN IN PLACE</h2>
+
+  <div style="color:#71838a;font-size:10px;letter-spacing:3px">
+
+    YOUR SIGNAL HAS BEEN LOST
+
+  </div>
+
+  <div id="restart">▸ REDEPLOY</div>
+
 </div>
+
 <div id="ui">
-  <div id="quest">
-    <div class="qtitle">THE LOST SERPENT</div>
-    <div class="qline" id="objective">Find the ancient Naga shrine</div>
+
+  <div id="mission">
+
+    <div id="missionTitle">OPERATION WHITEOUT</div>
+
+    <div id="missionText">REACH THE ABANDONED OUTPOST</div>
+
   </div>
-  <div id="distance">NAGALOKA • 0 m</div>
+
+  <div id="location">NORTHERN SECTOR • 03:17</div>
+
   <div id="boss">
-    <div class="bname">THE ANCIENT NAGA</div>
-    <div class="bbg">
-      <div class="bfill" id="bossfill"></div>
+
+    <div id="bossName">THE FROZEN COMMANDER</div>
+
+    <div id="bossBG">
+
+      <div id="bossFill"></div>
+
     </div>
+
   </div>
+
   <div id="crosshair"></div>
+
   <div id="scope">
-    <div class="tint"></div>
-    <div class="vline"></div>
-    <div class="hline"></div>
-    <div class="tick t1"></div>
-    <div class="tick t2"></div>
-    <div class="tick t3"></div>
-    <div class="tick t4"></div>
-    <div class="dot"></div>
-    <div class="mask"></div>
-    <div class="zoomLabel">UV·SCOPE 4.5×</div>
+
+    <div class="scopeCircle"></div>
+
+    <div class="scopeV"></div>
+
+    <div class="scopeH"></div>
+
+    <div class="scopeDot"></div>
+
+    <div class="scopeText">THERMAL OPTIC • 4.0×</div>
+
   </div>
-  <div id="msg"></div>
+
+  <div id="message"></div>
+
   <div id="hud">
+
     <div>
+
       <div class="label">VITALITY</div>
+
       <div class="bar">
-        <div class="bg">
-          <div class="fill" id="hp"></div>
-        </div>
+
+        <div id="health" class="fill"></div>
+
       </div>
+
       <div class="label" style="margin-top:8px">STAMINA</div>
+
       <div class="bar">
-        <div class="bg">
-          <div class="fill" id="st"></div>
-        </div>
+
+        <div id="stamina" class="fill"></div>
+
       </div>
+
     </div>
+
     <div>
-      <div id="ammo">∞</div>
-      <div class="label">UV CHARGE</div>
-      <div class="bar">
-        <div class="bg">
-          <div class="fill" id="uv"></div>
-        </div>
-      </div>
-      <div id="status">THE FOREST IS WATCHING</div>
+
+      <div id="ammo">30</div>
+
+      <div id="mag">RIFLE MAGAZINE</div>
+
     </div>
+
   </div>
-  <div id="controls">
-    WASD MOVE · MOUSE LOOK · CLICK FIRE · F / RMB UV TORCH · C AIM · SHIFT SPRINT · SPACE DODGE · M MUTE
-  </div>
+
 </div>
-<div id="mobile">
-  <div id="joy">
-    <div id="knob"></div>
-  </div>
-  <div class="btn" id="fire">FIRE</div>
-  <div class="btn" id="uvb">
-    UV<br>TORCH
-  </div>
-  <div class="btn" id="aim">AIM</div>
-  <div class="btn" id="sprint">RUN</div>
-  <div class="btn" id="dodge">DODGE</div>
-</div>
-<div id="vignette"></div>
+
 <div id="damage"></div>
+
+<div id="vignette"></div>
+
+<div id="mobile">
+
+  <div id="joy">
+
+    <div id="knob"></div>
+
+  </div>
+
+  <div class="btn" id="fire">FIRE</div>
+
+  <div class="btn" id="aim">AIM</div>
+
+  <div class="btn" id="reload">RELOAD</div>
+
+  <div class="btn" id="run">RUN</div>
+
+  <div class="btn" id="knife">MELEE</div>
+
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+
 <script>
+
 (() => {
+
 "use strict";
 
-/* ============================================================
-   NAGALOKA 1.0
-   Larger 3D jungle / temple / Naga prototype
-   GitHub Pages ready
-   ============================================================ */
-
 const $ = id => document.getElementById(id);
+
 const canvas = $("c");
+
 const isMobile =
-  /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ||
-  "ontouchstart" in window;
+
+/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ||
+
+"ontouchstart" in window;
 
 /* ============================================================
-   THREE.JS WORLD
-   ============================================================ */
 
-let scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x18262a, 0.0105);
+   THREE.JS
 
-let renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
-renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));
-renderer.setSize(innerWidth, innerHeight);
+============================================================ */
+
+const scene = new THREE.Scene();
+
+scene.fog = new THREE.FogExp2(0x9eafb6,.018);
+
+const renderer = new THREE.WebGLRenderer({
+
+  canvas,
+
+  antialias:true
+
+});
+
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+
+renderer.setSize(innerWidth,innerHeight);
+
 renderer.shadowMap.enabled = true;
+
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-let camera = new THREE.PerspectiveCamera(72, innerWidth/innerHeight, .05, 500);
+const camera = new THREE.PerspectiveCamera(
 
-let player = new THREE.Object3D();
-player.position.set(0, 2, 105);
+  72,
+
+  innerWidth/innerHeight,
+
+  .05,
+
+  450
+
+);
+
+const player = new THREE.Object3D();
+
+player.position.set(0,2,95);
+
 scene.add(player);
+
 player.add(camera);
-camera.position.set(0, 0, 0);
 
 /* ============================================================
+
    GAME STATE
-   ============================================================ */
 
-let yaw = 0;
-let pitch = 0;
-let aiming = false;
-let uvHeld = false;
-let sprinting = false;
-let alive = true;
-let started = false;
-let hp = 100;
-let stamina = 100;
-let uv = 100;
-let kills = 0;
-let relics = 0;
-let keys = {};
-let move = { x:0, y:0 };
-let dodgeTime = 0;
-let messageTimer = 0;
-let shrineReached = false;
-let nagaAwake = false;
-let naga = null;
-let worldRadius = 145;
-const clock = new THREE.Clock();
+============================================================ */
+
+let started=false;
+
+let alive=true;
+
+let hp=100;
+
+let stamina=100;
+
+let ammo=30;
+
+const maxAmmo=30;
+
+let kills=0;
+
+let yaw=0;
+
+let pitch=0;
+
+let aiming=false;
+
+let sprinting=false;
+
+let moveX=0;
+
+let moveY=0;
+
+let dodgeTimer=0;
+
+let reloadTimer=0;
+
+let fireCooldown=0;
+
+let bossAwake=false;
+
+let boss=null;
+
+const enemies=[];
+
+const obstacles=[];
+
+const clock=new THREE.Clock();
 
 /* ============================================================
+
    TERRAIN
-   ============================================================ */
 
-function terrainHeight(x,z){
+============================================================ */
+
+function terrain(x,z){
+
   return (
-    Math.sin(x*.032)*2.8 +
-    Math.cos(z*.027)*2.3 +
-    Math.sin((x+z)*.055)*1.3 +
-    Math.sin(x*.11-z*.07)*.45
+
+    Math.sin(x*.035)*2.3+
+
+    Math.cos(z*.025)*2.1+
+
+    Math.sin((x+z)*.045)*1.2+
+
+    Math.sin(x*.1+z*.07)*.3
+
   );
-}
 
-function groundAt(o){
-  return terrainHeight(o.x, o.z);
 }
 
 /* ============================================================
-   MATERIAL HELPERS
-   ============================================================ */
 
-function mat(color, rough=1, metal=0){
-  return new THREE.MeshStandardMaterial({ color, roughness:rough, metalness:metal });
+   MATERIALS
+
+============================================================ */
+
+function M(color,roughness=1,metalness=0){
+
+  return new THREE.MeshStandardMaterial({
+
+    color,
+
+    roughness,
+
+    metalness
+
+  });
+
 }
 
-const trunkMat = mat(0x211812);
-const barkMat = mat(0x302016);
-const leafMat = mat(0x0b2817);
-const leaf2Mat = mat(0x123a20);
-const stoneMat = mat(0x3d4038,.95);
-const mossMat = mat(0x254b31);
-const goldMat = mat(0xb18b42,.55,.35);
-const nagaMat = mat(0x244e43,.7,.05);
-const nagaGlowMat = mat(0x68c6b0,.35,.25);
+const snow=M(0xe7f0f2,.95);
 
-/* ============================================================
-   REALISTIC NIGHT SKY — gradient dome + moon disc
-   Replaces the flat background color with a proper horizon-to-
-   zenith gradient (warm hazy grey-teal near the ground fading to
-   deep navy-black overhead), plus a soft glowing moon positioned
-   along the same direction as the scene's moonlight so the two
-   line up. Fog color is matched to the horizon tone so distant
-   terrain blends into the sky instead of hitting a flat wall.
-   ============================================================ */
+const darkSnow=M(0xb9c9ce,.95);
 
-const skyGeo = new THREE.SphereGeometry(400, 24, 16);
-const skyMat = new THREE.ShaderMaterial({
-  uniforms:{
-    topColor:{ value:new THREE.Color(0x03060a) },
-    midColor:{ value:new THREE.Color(0x17272a) },
-    bottomColor:{ value:new THREE.Color(0x2c3d38) },
-    offset:{ value:12 },
-    exponent:{ value:.68 }
-  },
-  vertexShader:`
-    varying vec3 vWorldPosition;
-    void main(){
-      vec4 wp = modelMatrix*vec4(position,1.0);
-      vWorldPosition = wp.xyz;
-      gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0);
-    }
-  `,
-  fragmentShader:`
-    uniform vec3 topColor;
-    uniform vec3 midColor;
-    uniform vec3 bottomColor;
-    uniform float offset;
-    uniform float exponent;
-    varying vec3 vWorldPosition;
-    void main(){
-      float h = normalize(vWorldPosition+vec3(0,offset,0)).y;
-      float lo = smoothstep(-.02,.22,h);
-      float hi = pow(max(h,0.0), exponent);
-      vec3 low = mix(bottomColor, midColor, lo);
-      gl_FragColor = vec4(mix(low, topColor, hi), 1.0);
-    }
-  `,
-  side:THREE.BackSide,
-  depthWrite:false,
-  fog:false
+const pine=M(0x172a2d,.9);
+
+const pineDark=M(0x0d1d20,.95);
+
+const bark=M(0x282421);
+
+const metal=M(0x343d40,.4,.75);
+
+const black=M(0x101417,.5,.45);
+
+const orange=M(0xd57938,.6,.15);
+
+const enemyBlack=M(0x111719,.65,.1);
+
+const enemySnow=M(0xd4dedf,.8);
+
+const eyeMat=new THREE.MeshBasicMaterial({
+
+  color:0xff3030
+
 });
-const sky = new THREE.Mesh(skyGeo, skyMat);
-scene.add(sky);
 
-const moonDir = new THREE.Vector3(-55,80,35).normalize();
-const moonGlowTex = (() => {
-  const cv = document.createElement("canvas"); cv.width=cv.height=128;
-  const cx = cv.getContext("2d");
-  const grad = cx.createRadialGradient(64,64,0,64,64,64);
-  grad.addColorStop(0,"rgba(255,255,250,1)");
-  grad.addColorStop(.25,"rgba(225,235,240,.9)");
-  grad.addColorStop(.55,"rgba(160,190,210,.28)");
-  grad.addColorStop(1,"rgba(160,190,210,0)");
-  cx.fillStyle = grad;
-  cx.fillRect(0,0,128,128);
-  return new THREE.CanvasTexture(cv);
-})();
-const moonSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map:moonGlowTex, transparent:true, depthWrite:false, depthTest:false }));
-moonSprite.scale.set(46,46,1);
-moonSprite.position.copy(moonDir.clone().multiplyScalar(370));
-moonSprite.renderOrder = -1;
+/* ============================================================
+
+   SKY
+
+============================================================ */
+
+const skyGeo=new THREE.SphereGeometry(350,24,16);
+
+const skyMat=new THREE.ShaderMaterial({
+
+  uniforms:{
+
+    top:{value:new THREE.Color(0x071018)},
+
+    middle:{value:new THREE.Color(0x4e6873)},
+
+    bottom:{value:new THREE.Color(0xbccdd2)}
+
+  },
+
+  vertexShader:`
+
+    varying vec3 vPos;
+
+    void main(){
+
+      vPos=(modelMatrix*vec4(position,1.0)).xyz;
+
+      gl_Position=
+
+        projectionMatrix*
+
+        modelViewMatrix*
+
+        vec4(position,1.0);
+
+    }
+
+  `,
+
+  fragmentShader:`
+
+    uniform vec3 top;
+
+    uniform vec3 middle;
+
+    uniform vec3 bottom;
+
+    varying vec3 vPos;
+
+    void main(){
+
+      float h=normalize(vPos).y;
+
+      float a=smoothstep(-.1,.35,h);
+
+      float b=smoothstep(.2,.75,h);
+
+      vec3 c=mix(bottom,middle,a);
+
+      c=mix(c,top,b);
+
+      gl_FragColor=vec4(c,1.0);
+
+    }
+
+  `,
+
+  side:THREE.BackSide,
+
+  depthWrite:false
+
+});
+
+scene.add(new THREE.Mesh(skyGeo,skyMat));
+
+/* ============================================================
+
+   MOON
+
+============================================================ */
+
+const moonCanvas=document.createElement("canvas");
+
+moonCanvas.width=128;
+
+moonCanvas.height=128;
+
+const moonCTX=moonCanvas.getContext("2d");
+
+const moonGrad=moonCTX.createRadialGradient(
+
+64,64,0,
+
+64,64,64
+
+);
+
+moonGrad.addColorStop(0,"rgba(255,255,255,1)");
+
+moonGrad.addColorStop(.3,"rgba(220,240,245,.8)");
+
+moonGrad.addColorStop(.7,"rgba(170,210,225,.2)");
+
+moonGrad.addColorStop(1,"rgba(170,210,225,0)");
+
+moonCTX.fillStyle=moonGrad;
+
+moonCTX.fillRect(0,0,128,128);
+
+const moonTex=new THREE.CanvasTexture(moonCanvas);
+
+const moonSprite=new THREE.Sprite(
+
+new THREE.SpriteMaterial({
+
+  map:moonTex,
+
+  transparent:true,
+
+  depthWrite:false
+
+})
+
+);
+
+moonSprite.scale.set(50,50,1);
+
+moonSprite.position.set(-130,100,-180);
+
 scene.add(moonSprite);
 
 /* ============================================================
+
    GROUND
-   ============================================================ */
 
-function makeGround(){
-  const geo = new THREE.PlaneGeometry(320, 320, 160, 160);
-  geo.rotateX(-Math.PI/2);
-  const p = geo.attributes.position;
-  for(let i=0; i<p.count; i++){
-    p.setY(i, terrainHeight(p.getX(i), p.getZ(i)));
-  }
-  geo.computeVertexNormals();
-  const m = mat(0x182519);
-  const g = new THREE.Mesh(geo, m);
-  g.receiveShadow = true;
-  scene.add(g);
-}
-makeGround();
+============================================================ */
 
-/* ============================================================
-   DISTANT MOUNTAINS
-   ============================================================ */
+const groundGeo=
 
-for(let i=0;i<20;i++){
-  const a = i/20*Math.PI*2 + Math.random()*.12;
-  const d = 145 + Math.random()*45;
-  const h = 35 + Math.random()*55;
-  const g = new THREE.ConeGeometry(18+Math.random()*24, h, 6);
-  const m = mat(0x0b1712);
-  const o = new THREE.Mesh(g, m);
-  o.position.set(Math.cos(a)*d, h/2-4, Math.sin(a)*d);
-  o.rotation.y = Math.random()*6;
-  o.castShadow = true;
-  scene.add(o);
-}
+new THREE.PlaneGeometry(
 
-/* ============================================================
-   MIST
-   ============================================================ */
+300,300,140,140
 
-const mistMat = new THREE.MeshBasicMaterial({
-  color:0x8aa99a, transparent:true, opacity:.045, depthWrite:false
-});
-for(let i=0;i<16;i++){
-  const g = new THREE.PlaneGeometry(100+Math.random()*100, 18+Math.random()*20);
-  const o = new THREE.Mesh(g, mistMat.clone());
-  o.position.set((Math.random()-.5)*180, 8+Math.random()*18, (Math.random()-.5)*180);
-  o.rotation.y = Math.random()*Math.PI;
-  scene.add(o);
-}
-
-/* ============================================================
-   LUSH INSTANCED JUNGLE
-   Multiple distinct tree species, each its own InstancedMesh set,
-   so density can go way up without a per-tree draw-call cost.
-   Randomized per-instance scale/rotation/tilt kills the repetition.
-   ============================================================ */
-
-const obstacles = [];
-const canopyMats = [leafMat, leaf2Mat, mat(0x1b4a28), mat(0x0e3320), mat(0x2a5c34)];
-const palmLeafMat = mat(0x1e4d2c, .85);
-const fernMat = mat(0x1a3d22, .9);
-
-function clearZone(x,z){
-  return Math.abs(x)<9 && z<48 && z>-114; // keep temple avenue + lake clear
-}
-
-// Species A: broad canopy giants (icosahedron clumps on a tapered trunk)
-const canopyGeo = new THREE.IcosahedronGeometry(1, 1);
-const trunkGeoA = new THREE.CylinderGeometry(.16, .34, 1, 7);
-const canopyMesh = canopyMats.map(m => {
-  const im = new THREE.InstancedMesh(canopyGeo, m, 700);
-  im.castShadow = true;
-  scene.add(im);
-  return im;
-});
-const trunkMeshA = new THREE.InstancedMesh(trunkGeoA, ancientTrunkOrTrunk(), 500);
-function ancientTrunkOrTrunk(){ return trunkMat; }
-trunkMeshA.castShadow = true;
-trunkMeshA.receiveShadow = true;
-scene.add(trunkMeshA);
-
-// Species B: tall ancient banyan-style (thicker, taller, draping canopy)
-const trunkGeoB = new THREE.CylinderGeometry(.55, .95, 1, 8);
-const trunkMeshB = new THREE.InstancedMesh(trunkGeoB, barkMat, 90);
-trunkMeshB.castShadow = true;
-trunkMeshB.receiveShadow = true;
-scene.add(trunkMeshB);
-const canopyMeshB = canopyMats.map(m => {
-  const im = new THREE.InstancedMesh(canopyGeo, m, 260);
-  im.castShadow = true;
-  scene.add(im);
-  return im;
-});
-
-// Species C: slender palms (curved trunk look via tilt + frond cluster)
-const trunkGeoC = new THREE.CylinderGeometry(.09, .17, 1, 6);
-const trunkMeshC = new THREE.InstancedMesh(trunkGeoC, barkMat, 260);
-trunkMeshC.castShadow = true;
-scene.add(trunkMeshC);
-const frondGeo = new THREE.ConeGeometry(.12, 1, 4);
-const frondMesh = new THREE.InstancedMesh(frondGeo, palmLeafMat, 260*6);
-frondMesh.castShadow = true;
-scene.add(frondMesh);
-
-// Species D: low fern / undergrowth clusters for ground-level lushness
-const fernGeo = new THREE.ConeGeometry(1, 1, 5);
-const fernMesh = new THREE.InstancedMesh(fernGeo, fernMat, 900);
-scene.add(fernMesh);
-
-const dummy = new THREE.Object3D();
-let trA=0, trB=0, trC=0, frC=0, fern=0;
-const canACounts = canopyMats.map(()=>0);
-const canBCounts = canopyMats.map(()=>0);
-
-function plantGiant(x,z){
-  const h = 8+Math.random()*9;
-  const rBase = .55+Math.random()*.55;
-  dummy.position.set(x, terrainHeight(x,z)+h/2, z);
-  dummy.rotation.set(0, Math.random()*Math.PI*2, 0);
-  dummy.scale.set(rBase, h, rBase);
-  dummy.updateMatrix();
-  trunkMeshA.setMatrixAt(trA++, dummy.matrix);
-  obstacles.push({ x, z, r:.65 });
-
-  const leaves = 5+Math.floor(Math.random()*3);
-  for(let i=0;i<leaves;i++){
-    const lr = 1.4+Math.random()*1.5;
-    dummy.position.set(x+(Math.random()-.5)*4.2, terrainHeight(x,z)+h*.68+Math.random()*h*.4, z+(Math.random()-.5)*4.2);
-    dummy.rotation.set(Math.random()*.5, Math.random()*Math.PI*2, Math.random()*.5);
-    dummy.scale.set(lr, lr*.55, lr);
-    dummy.updateMatrix();
-    const mi = Math.floor(Math.random()*canopyMesh.length);
-    if(canACounts[mi] < 700){
-      canopyMesh[mi].setMatrixAt(canACounts[mi]++, dummy.matrix);
-    }
-  }
-}
-
-function plantAncient(x,z){
-  const h = 15+Math.random()*11;
-  const rBase = .9+Math.random()*.55;
-  dummy.position.set(x, terrainHeight(x,z)+h/2, z);
-  dummy.rotation.set(0, Math.random()*Math.PI*2, 0);
-  dummy.scale.set(rBase, h, rBase);
-  dummy.updateMatrix();
-  trunkMeshB.setMatrixAt(trB++, dummy.matrix);
-  obstacles.push({ x, z, r:1.4 });
-
-  const leaves = 9+Math.floor(Math.random()*4);
-  for(let i=0;i<leaves;i++){
-    const lr = 2.6+Math.random()*2.6;
-    dummy.position.set(x+(Math.random()-.5)*6, terrainHeight(x,z)+h*.62+Math.random()*h*.42, z+(Math.random()-.5)*6);
-    dummy.rotation.set(Math.random()*.4, Math.random()*Math.PI*2, Math.random()*.4);
-    dummy.scale.set(lr, lr*.55, lr);
-    dummy.updateMatrix();
-    const mi = Math.floor(Math.random()*canopyMeshB.length);
-    if(canBCounts[mi] < 260){
-      canopyMeshB[mi].setMatrixAt(canBCounts[mi]++, dummy.matrix);
-    }
-  }
-}
-
-function plantPalm(x,z){
-  const h = 6+Math.random()*5;
-  const tilt = (Math.random()-.5)*.35;
-  dummy.position.set(x, terrainHeight(x,z)+h/2, z);
-  dummy.rotation.set(tilt, Math.random()*Math.PI*2, tilt*.6);
-  dummy.scale.set(1, h, 1);
-  dummy.updateMatrix();
-  trunkMeshC.setMatrixAt(trC++, dummy.matrix);
-  obstacles.push({ x, z, r:.4 });
-
-  const topY = terrainHeight(x,z)+h - Math.sin(tilt)*h*.3;
-  for(let i=0;i<6;i++){
-    const ang = i/6*Math.PI*2;
-    dummy.position.set(x+Math.cos(ang)*.15, topY+.6, z+Math.sin(ang)*.15);
-    dummy.rotation.set(Math.PI*.42, ang, 0);
-    dummy.scale.set(1.6, 2.6+Math.random()*.8, 1.6);
-    dummy.updateMatrix();
-    frondMesh.setMatrixAt(frC++, dummy.matrix);
-  }
-}
-
-function plantFerns(x,z,count){
-  for(let i=0;i<count;i++){
-    if(fern>=900) return;
-    const fx = x+(Math.random()-.5)*3.5;
-    const fz = z+(Math.random()-.5)*3.5;
-    const s = .5+Math.random()*.8;
-    dummy.position.set(fx, terrainHeight(fx,fz)+s*.5, fz);
-    dummy.rotation.set(0, Math.random()*Math.PI*2, 0);
-    dummy.scale.set(s, s*1.3, s);
-    dummy.updateMatrix();
-    fernMesh.setMatrixAt(fern++, dummy.matrix);
-  }
-}
-
-for(let i=0;i<500 && trA<500;i++){
-  const a = Math.random()*Math.PI*2;
-  const d = 10+Math.random()*128;
-  const x = Math.cos(a)*d, z = Math.sin(a)*d;
-  if(clearZone(x,z)) continue;
-  plantGiant(x,z);
-  if(Math.random()<.55) plantFerns(x,z, 2+Math.floor(Math.random()*3));
-}
-for(let i=0;i<90 && trB<90;i++){
-  const a = Math.random()*Math.PI*2;
-  const d = 20+Math.random()*120;
-  const x = Math.cos(a)*d, z = Math.sin(a)*d;
-  if(clearZone(x,z)) continue;
-  plantAncient(x,z);
-}
-for(let i=0;i<260 && trC<260;i++){
-  const a = Math.random()*Math.PI*2;
-  const d = 15+Math.random()*125;
-  const x = Math.cos(a)*d, z = Math.sin(a)*d;
-  if(clearZone(x,z)) continue;
-  plantPalm(x,z);
-  if(Math.random()<.4) plantFerns(x,z, 2);
-}
-while(fern<900){
-  const a = Math.random()*Math.PI*2;
-  const d = 10+Math.random()*130;
-  const x = Math.cos(a)*d, z = Math.sin(a)*d;
-  if(clearZone(x,z)) continue;
-  plantFerns(x,z, 1);
-}
-
-trunkMeshA.count = trA; trunkMeshA.instanceMatrix.needsUpdate = true;
-trunkMeshB.count = trB; trunkMeshB.instanceMatrix.needsUpdate = true;
-trunkMeshC.count = trC; trunkMeshC.instanceMatrix.needsUpdate = true;
-frondMesh.count = frC; frondMesh.instanceMatrix.needsUpdate = true;
-fernMesh.count = fern; fernMesh.instanceMatrix.needsUpdate = true;
-canopyMesh.forEach((im,i) => { im.count = canACounts[i]; im.instanceMatrix.needsUpdate = true; });
-canopyMeshB.forEach((im,i) => { im.count = canBCounts[i]; im.instanceMatrix.needsUpdate = true; });
-
-/* ============================================================
-   TEMPLE PILLARS
-   ============================================================ */
-
-function pillar(x, z, h=5){
-  const o = new THREE.Mesh(new THREE.BoxGeometry(1.1, h, 1.1), stoneMat);
-  o.position.set(x, terrainHeight(x,z)+h/2, z);
-  o.rotation.y = Math.random()*.3;
-  o.castShadow = true;
-  o.receiveShadow = true;
-  scene.add(o);
-  obstacles.push({ x, z, r:.7 });
-}
-for(let i=0;i<14;i++){
-  const a = i/14*Math.PI*2;
-  const d = 19;
-  pillar(Math.cos(a)*d, Math.sin(a)*d, 4+Math.random()*3);
-}
-
-/* ============================================================
-   TEMPLE PLATFORM
-   ============================================================ */
-
-const platform = new THREE.Mesh(
-  new THREE.CylinderGeometry(15, 17, 1.2, 10),
-  stoneMat
 );
-platform.position.set(0, terrainHeight(0,0)+.3, 0);
-platform.castShadow = true;
-platform.receiveShadow = true;
-scene.add(platform);
 
-/* ============================================================
-   GRAND NAGA TEMPLE
-   ============================================================ */
+groundGeo.rotateX(-Math.PI/2);
 
-const temple = new THREE.Group();
-scene.add(temple);
-temple.position.y = terrainHeight(0,0)+1;
-obstacles.push({ x:0, z:0, r:3.2 });
+const gp=groundGeo.attributes.position;
 
-for(let i=0;i<5;i++){
-  const w = 6-i*.7;
-  const h = 5+i*2.5;
-  const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), stoneMat);
-  b.position.y = h/2;
-  b.castShadow = true;
-  b.receiveShadow = true;
-  temple.add(b);
-}
+for(let i=0;i<gp.count;i++){
 
-const roof = new THREE.Mesh(new THREE.ConeGeometry(8, 9, 8), stoneMat);
-roof.position.y = 17;
-roof.castShadow = true;
-temple.add(roof);
+  gp.setY(
 
-for(let i=0;i<4;i++){
-  const tor = new THREE.Mesh(
-    new THREE.TorusGeometry(5+i*.8, .35, 8, 32, Math.PI*1.7),
-    goldMat
+    i,
+
+    terrain(
+
+      gp.getX(i),
+
+      gp.getZ(i)
+
+    )
+
   );
-  tor.rotation.x = Math.PI/2;
-  tor.position.y = 7+i*2.1;
-  temple.add(tor);
+
 }
 
-const shrineGlow = new THREE.PointLight(0x65d7bf, 2.2, 28);
-shrineGlow.position.set(0, 12, 0);
-temple.add(shrineGlow);
+groundGeo.computeVertexNormals();
+
+const ground=
+
+new THREE.Mesh(
+
+  groundGeo,
+
+  snow
+
+);
+
+ground.receiveShadow=true;
+
+scene.add(ground);
 
 /* ============================================================
-   LAKES — one main lake + two smaller pools scattered in the jungle
-   ============================================================ */
 
-const waterMat = new THREE.MeshStandardMaterial({
-  color:0x1d6170, roughness:.15, metalness:.15, transparent:true, opacity:.72
-});
-const lake = new THREE.Mesh(new THREE.CircleGeometry(22, 48), waterMat);
-lake.rotation.x = -Math.PI/2;
-lake.position.set(45, terrainHeight(45,20)+.15, 20);
-scene.add(lake);
+   MOUNTAINS
 
-const smallLakeSpots = [
-  { x:-58, z:-30, r:9 },
-  { x:-30, z:64,  r:6.5 }
-];
-smallLakeSpots.forEach(spot => {
-  const pool = new THREE.Mesh(new THREE.CircleGeometry(spot.r, 36), waterMat.clone());
-  pool.rotation.x = -Math.PI/2;
-  pool.position.set(spot.x, terrainHeight(spot.x, spot.z)+.15, spot.z);
-  scene.add(pool);
-  // ring of stones at the water's edge
-  const stoneCount = 10;
-  for(let i=0;i<stoneCount;i++){
-    const a = i/stoneCount*Math.PI*2;
-    const sx = spot.x+Math.cos(a)*(spot.r+.6);
-    const sz = spot.z+Math.sin(a)*(spot.r+.6);
-    const s = new THREE.Mesh(new THREE.DodecahedronGeometry(.5+Math.random()*.4,0), stoneMat);
-    s.position.set(sx, terrainHeight(sx,sz)+.3, sz);
-    s.rotation.set(Math.random(), Math.random(), Math.random());
-    s.castShadow = true;
-    scene.add(s);
-  }
-});
+============================================================ */
 
-/* ============================================================
-   ANCIENT PYRAMIDS — stepped stone pyramids as jungle landmarks
-   ============================================================ */
+for(let i=0;i<22;i++){
 
-function makePyramid(x, z, baseSize, steps, rotY){
-  const group = new THREE.Group();
-  const totalH = baseSize*.62;
-  const stepH = totalH/steps;
-  for(let i=0;i<steps;i++){
-    const scaleT = 1 - i/steps;
-    const w = baseSize*scaleT;
-    const tier = new THREE.Mesh(new THREE.BoxGeometry(w, stepH, w), i%2 ? stoneMat : mossMat);
-    tier.position.y = stepH*i + stepH/2;
-    tier.castShadow = true;
-    tier.receiveShadow = true;
-    group.add(tier);
-  }
-  // capstone
-  const cap = new THREE.Mesh(new THREE.ConeGeometry(baseSize*.09, stepH*1.4, 4), goldMat);
-  cap.position.y = totalH+stepH*.6;
-  cap.rotation.y = Math.PI/4;
-  cap.castShadow = true;
-  group.add(cap);
-  // carved entrance
-  const door = new THREE.Mesh(new THREE.BoxGeometry(baseSize*.14, stepH*1.6, .3), mat(0x0c0f0c));
-  door.position.set(0, stepH*.8, baseSize/2*.5+.15);
-  group.add(door);
+  const angle=Math.random()*Math.PI*2;
 
-  group.position.set(x, terrainHeight(x,z), z);
-  group.rotation.y = rotY;
-  scene.add(group);
-  obstacles.push({ x, z, r: baseSize*.55 });
-  return group;
-}
-makePyramid(-72, -68, 26, 7, .5);
-makePyramid(68, -55, 18, 6, -1.1);
-makePyramid(-40, -95, 14, 5, 2.2);
+  const dist=145+Math.random()*45;
 
-/* ============================================================
-   WATERFALL
-   ============================================================ */
+  const height=35+Math.random()*55;
 
-for(let i=0;i<5;i++){
-  const wh = 8+Math.random()*9;
-  const ww = 3+Math.random()*2;
-  const w = new THREE.Mesh(
-    new THREE.PlaneGeometry(ww, wh),
-    new THREE.MeshBasicMaterial({ color:0x8ed8df, transparent:true, opacity:.45, side:THREE.DoubleSide })
+  const mountain=
+
+  new THREE.Mesh(
+
+    new THREE.ConeGeometry(
+
+      20+Math.random()*25,
+
+      height,
+
+      7
+
+    ),
+
+    darkSnow
+
   );
-  w.position.set(45+(-10+i*5), terrainHeight(45+(-10+i*5), -1)+wh/2, 0);
-  scene.add(w);
+
+  mountain.position.set(
+
+    Math.cos(angle)*dist,
+
+    height/2-5,
+
+    Math.sin(angle)*dist
+
+  );
+
+  mountain.rotation.y=Math.random()*6;
+
+  mountain.castShadow=true;
+
+  scene.add(mountain);
+
 }
 
 /* ============================================================
-   RUNE STONES
-   ============================================================ */
 
-for(let i=0;i<12;i++){
-  const z = 82-i*7;
-  const s = new THREE.Mesh(new THREE.BoxGeometry(1.3, 2.2, 1.0), stoneMat);
-  s.position.set((Math.random()-.5)*4, terrainHeight(0,z)+1.1, z);
-  s.rotation.z = (Math.random()-.5)*.18;
-  scene.add(s);
+   PINE TREES
+
+============================================================ */
+
+function tree(x,z,scale=1){
+
+  const g=new THREE.Group();
+
+  const trunk=
+
+  new THREE.Mesh(
+
+    new THREE.CylinderGeometry(
+
+      .25*scale,
+
+      .4*scale,
+
+      5*scale,
+
+      7
+
+    ),
+
+    bark
+
+  );
+
+  trunk.position.y=2.5*scale;
+
+  g.add(trunk);
+
+  for(let i=0;i<4;i++){
+
+    const cone=
+
+    new THREE.Mesh(
+
+      new THREE.ConeGeometry(
+
+        (3-i*.55)*scale,
+
+        4*scale,
+
+        8
+
+      ),
+
+      i%2?pine:pineDark
+
+    );
+
+    cone.position.y=
+
+      4+i*2.3;
+
+    g.add(cone);
+
+  }
+
+  g.position.set(
+
+    x,
+
+    terrain(x,z),
+
+    z
+
+  );
+
+  g.rotation.y=Math.random()*6.28;
+
+  g.castShadow=true;
+
+  scene.add(g);
+
+  obstacles.push({
+
+    x,
+
+    z,
+
+    r:1.4*scale
+
+  });
+
+}
+
+for(let i=0;i<220;i++){
+
+  const a=Math.random()*Math.PI*2;
+
+  const d=14+Math.random()*125;
+
+  const x=Math.cos(a)*d;
+
+  const z=Math.sin(a)*d;
+
+  if(Math.abs(x)<10 && z>45) continue;
+
+  tree(
+
+    x,
+
+    z,
+
+    .75+Math.random()*1.25
+
+  );
+
 }
 
 /* ============================================================
+
+   SNOW PARTICLES
+
+============================================================ */
+
+const snowCount=1200;
+
+const snowGeo=new THREE.BufferGeometry();
+
+const snowPos=
+
+new Float32Array(snowCount*3);
+
+for(let i=0;i<snowCount;i++){
+
+  snowPos[i*3]=(Math.random()-.5)*260;
+
+  snowPos[i*3+1]=Math.random()*45;
+
+  snowPos[i*3+2]=(Math.random()-.5)*260;
+
+}
+
+snowGeo.setAttribute(
+
+  "position",
+
+  new THREE.BufferAttribute(snowPos,3)
+
+);
+
+const snowParticles=
+
+new THREE.Points(
+
+  snowGeo,
+
+  new THREE.PointsMaterial({
+
+    color:0xffffff,
+
+    size:.11,
+
+    transparent:true,
+
+    opacity:.7
+
+  })
+
+);
+
+scene.add(snowParticles);
+
+/* ============================================================
+
+   OUTPOST
+
+============================================================ */
+
+const outpost=new THREE.Group();
+
+function box(w,h,d,material,x,y,z){
+
+  const o=
+
+  new THREE.Mesh(
+
+    new THREE.BoxGeometry(w,h,d),
+
+    material
+
+  );
+
+  o.position.set(x,y,z);
+
+  o.castShadow=true;
+
+  o.receiveShadow=true;
+
+  outpost.add(o);
+
+  return o;
+
+}
+
+box(14,7,10,black,0,3.5,0);
+
+box(15,.4,11,snow,0,7.1,0);
+
+box(2.5,3,.3,metal,0,1.6,-5.15);
+
+box(2,2,2,metal,-5,4,-5);
+
+box(2,2,2,metal,5,4,-5);
+
+outpost.position.set(0,terrain(0,0),0);
+
+scene.add(outpost);
+
+obstacles.push({
+
+  x:0,
+
+  z:0,
+
+  r:8
+
+});
+
+/* ============================================================
+
+   RADIO TOWER
+
+============================================================ */
+
+const tower=new THREE.Group();
+
+for(let side of [-1,1]){
+
+  const leg=
+
+  new THREE.Mesh(
+
+    new THREE.CylinderGeometry(.12,.15,18,6),
+
+    metal
+
+  );
+
+  leg.position.set(side*2,9,0);
+
+  leg.rotation.z=side*.08;
+
+  tower.add(leg);
+
+}
+
+for(let y=3;y<18;y+=3){
+
+  const cross=
+
+  new THREE.Mesh(
+
+    new THREE.BoxGeometry(4,.12,.12),
+
+    metal
+
+  );
+
+  cross.position.y=y;
+
+  tower.add(cross);
+
+}
+
+tower.position.set(13,terrain(13,0),0);
+
+scene.add(tower);
+
+/* ============================================================
+
    LIGHTING
-   ============================================================ */
 
-const hemi = new THREE.HemisphereLight(0x6f9483, 0x0a120c, 1.05);
-scene.add(hemi);
+============================================================ */
 
-const moon = new THREE.DirectionalLight(0xa8c6e6, 1.4);
-moon.position.set(-55, 80, 35);
-moon.castShadow = true;
-moon.shadow.mapSize.set(1536, 1536);
-moon.shadow.camera.near = 5;
-moon.shadow.camera.far = 260;
-moon.shadow.camera.left = -100;
-moon.shadow.camera.right = 100;
-moon.shadow.camera.top = 100;
-moon.shadow.camera.bottom = -100;
-scene.add(moon);
+scene.add(
 
-const fireLight = new THREE.PointLight(0xd17b3c, 1.4, 22);
-fireLight.position.set(0, 4, 0);
-scene.add(fireLight);
+new THREE.HemisphereLight(
 
-const hand = new THREE.PointLight(0x31504a, .28, 7);
-camera.add(hand);
-hand.position.set(0, -.3, .5);
+  0xb9d7e3,
 
-/* ============================================================
-   FIRST-PERSON UV SNIPER RIFLE
-   Bolt-action profile: long fluted barrel, slim stepped receiver,
-   straight sniper stock with cheek riser, detachable box mag,
-   folded bipod, and a mounted scope (objective + ocular lens,
-   ring mounts, adjustment turrets) that doubles as the ADS view —
-   scoping in hides the model and shows a reticle overlay instead.
-   Also carries the physical UV torch module under the barrel.
-   All child of camera; a rest group handles sway/bob/recoil.
-   ============================================================ */
+  0x10161a,
 
-const rifleRest = new THREE.Group();
-rifleRest.position.set(.3, -.27, -.6);
-camera.add(rifleRest);
+  1.15
 
-const rifleMat = mat(0x262b24, .5, .4);
-const rifleMatDark = mat(0x121510, .65, .15);
-const rifleMetal = mat(0xa8aaa1, .28, .88);
-const rifleAccent = mat(0x3c463a, .45, .3);
-const scopeGlassMat = new THREE.MeshBasicMaterial({ color:0x7fd8c8, transparent:true, opacity:.55 });
-const emitterMat = new THREE.MeshStandardMaterial({
-  color:0x9be9ff, emissive:0x6fd8ff, emissiveIntensity:1.6, roughness:.2, metalness:.1
-});
+));
 
-const rifle = new THREE.Group();
-rifleRest.add(rifle);
+const moonLight=
 
-// straight sniper stock with a raised cheek riser
-const stockMain = new THREE.Mesh(new THREE.BoxGeometry(.07,.08,.38), rifleMatDark);
-stockMain.position.set(0,-.01,.36);
-rifle.add(stockMain);
-const cheekRiser = new THREE.Mesh(new THREE.BoxGeometry(.05,.03,.22), rifleAccent);
-cheekRiser.position.set(0,.05,.3);
-rifle.add(cheekRiser);
-const buttPad = new THREE.Mesh(new THREE.BoxGeometry(.078,.1,.02), rifleMatDark);
-buttPad.position.set(0,-.01,.55);
-rifle.add(buttPad);
+new THREE.DirectionalLight(
 
-// slim stepped receiver
-const receiverLower = new THREE.Mesh(new THREE.BoxGeometry(.085,.075,.34), rifleMat);
-receiverLower.position.set(0,.0,.05);
-rifle.add(receiverLower);
-const receiverTop = new THREE.Mesh(new THREE.BoxGeometry(.055,.03,.4), rifleMatDark);
-receiverTop.position.set(0,.05,-.02);
-rifle.add(receiverTop);
-// bolt handle, angled out to the side
-const bolt = new THREE.Mesh(new THREE.CylinderGeometry(.013,.013,.09,8), rifleMetal);
-bolt.rotation.z = Math.PI/2.3;
-bolt.position.set(.06,.02,.1);
-rifle.add(bolt);
-const boltKnob = new THREE.Mesh(new THREE.SphereGeometry(.016,8,8), rifleMetal);
-boltKnob.position.set(.095,.0,.1);
-rifle.add(boltKnob);
+  0xb7d9e8,
 
-// detachable box magazine
-const magazine = new THREE.Mesh(new THREE.BoxGeometry(.04,.12,.06), rifleMatDark);
-magazine.position.set(0,-.14,.06);
-magazine.rotation.x = .08;
-rifle.add(magazine);
+  1.45
 
-// long fluted barrel
-const barrel = new THREE.Mesh(new THREE.CylinderGeometry(.022,.028,.72,10), rifleMat);
-barrel.rotation.x = Math.PI/2;
-barrel.position.set(0,.02,-.6);
-rifle.add(barrel);
-for(let i=0;i<6;i++){
-  const flute = new THREE.Mesh(new THREE.BoxGeometry(.006,.005,.5), rifleMatDark);
-  const a = i/6*Math.PI*2;
-  flute.position.set(Math.cos(a)*.021, .02+Math.sin(a)*.021, -.58);
-  rifle.add(flute);
-}
-// free-float handguard around the receiver end of the barrel
-const handguard = new THREE.Mesh(new THREE.CylinderGeometry(.032,.032,.28,10), rifleMatDark);
-handguard.rotation.x = Math.PI/2;
-handguard.position.set(0,.02,-.32);
-rifle.add(handguard);
-// muzzle brake / flash hider
-const brake = new THREE.Mesh(new THREE.CylinderGeometry(.03,.026,.1,10), rifleMetal);
-brake.rotation.x = Math.PI/2;
-brake.position.set(0,.02,-.98);
-rifle.add(brake);
-for(let i=0;i<4;i++){
-  const slit = new THREE.Mesh(new THREE.BoxGeometry(.005,.04,.018), rifleMatDark);
-  const a = i/4*Math.PI*2;
-  slit.position.set(Math.cos(a)*.03, .02+Math.sin(a)*.03, -.98);
-  slit.rotation.z = a;
-  rifle.add(slit);
-}
-// UV emitter crystal at muzzle tip
-const emitter = new THREE.Mesh(new THREE.OctahedronGeometry(.042,0), emitterMat);
-emitter.position.set(0,.02,-1.03);
-rifle.add(emitter);
-const emitterCore = new THREE.PointLight(0x7fe3ff, 1.1, 1.6);
-emitterCore.position.copy(emitter.position);
-rifle.add(emitterCore);
+);
 
-// rear pistol grip
-const pgrip = new THREE.Mesh(new THREE.BoxGeometry(.038,.14,.055), rifleMatDark);
-pgrip.position.set(0,-.1,.16);
-pgrip.rotation.x = .32;
-rifle.add(pgrip);
-const trigGuard = new THREE.Mesh(new THREE.TorusGeometry(.032,.006,6,12,Math.PI), rifleMetal);
-trigGuard.position.set(0,-.04,.14);
-trigGuard.rotation.z = Math.PI;
-rifle.add(trigGuard);
+moonLight.position.set(
 
-// folded bipod under the handguard
-for(const side of [-1,1]){
-  const leg = new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,.16,6), rifleMetal);
-  leg.position.set(side*.03,-.03,-.36);
-  leg.rotation.z = side*.25;
-  rifle.add(leg);
-}
+-100,
 
-/* ---- mounted scope — the ADS view ---- */
-const scopeGroup = new THREE.Group();
-scopeGroup.position.set(0,.09,-.05);
-rifle.add(scopeGroup);
-// ring mounts
-for(const zp of [.11,-.22]){
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(.026,.006,8,14), rifleMatDark);
-  ring.rotation.x = Math.PI/2;
-  ring.position.set(0,-.015,zp);
-  scopeGroup.add(ring);
-}
-// main scope tube
-const scopeTube = new THREE.Mesh(new THREE.CylinderGeometry(.023,.023,.46,14), rifleMatDark);
-scopeTube.rotation.x = Math.PI/2;
-scopeTube.position.set(0,0,-.06);
-scopeGroup.add(scopeTube);
-// objective bell (front, larger)
-const objBell = new THREE.Mesh(new THREE.CylinderGeometry(.03,.026,.07,14), rifleMatDark);
-objBell.rotation.x = Math.PI/2;
-objBell.position.set(0,0,-.28);
-scopeGroup.add(objBell);
-const objLens = new THREE.Mesh(new THREE.CircleGeometry(.026,16), scopeGlassMat);
-objLens.position.set(0,0,-.316);
-scopeGroup.add(objLens);
-// ocular bell (rear, smaller, closer to eye)
-const ocBell = new THREE.Mesh(new THREE.CylinderGeometry(.026,.023,.05,14), rifleMatDark);
-ocBell.rotation.x = Math.PI/2;
-ocBell.position.set(0,0,.19);
-scopeGroup.add(ocBell);
-const ocLens = new THREE.Mesh(new THREE.CircleGeometry(.023,16), scopeGlassMat);
-ocLens.position.set(0,0,.216);
-scopeGroup.add(ocLens);
-// windage + elevation turrets
-const turretMat = rifleMetal;
-const elevTurret = new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.03,10), turretMat);
-elevTurret.position.set(0,.028,-.06);
-scopeGroup.add(elevTurret);
-const windTurret = new THREE.Mesh(new THREE.CylinderGeometry(.014,.014,.03,10), turretMat);
-windTurret.rotation.z = Math.PI/2;
-windTurret.position.set(.028,0,-.14);
-scopeGroup.add(windTurret);
+100,
 
-// side vent slats on the receiver (breaks up the flat face)
-for(let i=0;i<3;i++){
-  const slat = new THREE.Mesh(new THREE.BoxGeometry(.005,.018,.08), rifleMetal);
-  slat.position.set(.045,-.005,.02-i*.05);
-  rifle.add(slat);
-}
+-80
 
-/* ---- UV torch module — a physical lamp slung under the barrel ---- */
-const torchGroup = new THREE.Group();
-torchGroup.position.set(0,-.04,-.44);
-rifle.add(torchGroup);
-const torchArm = new THREE.Mesh(new THREE.BoxGeometry(.014,.03,.03), rifleMatDark);
-torchArm.position.set(0,.015,0);
-torchGroup.add(torchArm);
-const torchBody = new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,.13,12), rifleMetal);
-torchBody.rotation.x = Math.PI/2;
-torchBody.position.set(0,0,-.05);
-torchGroup.add(torchBody);
-const torchBezel = new THREE.Mesh(new THREE.TorusGeometry(.023,.005,8,14), rifleMatDark);
-torchBezel.rotation.x = Math.PI/2;
-torchBezel.position.set(0,0,-.115);
-torchGroup.add(torchBezel);
-const torchLens = new THREE.Mesh(new THREE.CircleGeometry(.02,14), new THREE.MeshBasicMaterial({color:0xbfeeff, transparent:true, opacity:.85}));
-torchLens.position.set(0,0,-.118);
-torchGroup.add(torchLens);
-const torchLed = new THREE.Mesh(new THREE.SphereGeometry(.004,6,6), new THREE.MeshBasicMaterial({color:0x7fffbf}));
-torchLed.position.set(.018,.01,.01);
-torchGroup.add(torchLed);
+);
 
-// the UV spotlight now physically lives in the torch housing
-const uvLight = new THREE.SpotLight(0xb8ddff, 0, 30, Math.PI/8, .42, 1.7);
-torchGroup.add(uvLight);
-uvLight.position.set(0,0,-.12);
-const uvTarget = new THREE.Object3D();
-uvTarget.position.set(0,0,-1);
-camera.add(uvTarget);
-uvLight.target = uvTarget;
+moonLight.castShadow=true;
 
-// muzzle flash sprite
-const flashTex = (() => {
-  const cv = document.createElement("canvas"); cv.width=cv.height=64;
-  const cx = cv.getContext("2d");
-  const grad = cx.createRadialGradient(32,32,0,32,32,32);
-  grad.addColorStop(0,"rgba(220,245,255,1)");
-  grad.addColorStop(.4,"rgba(140,220,255,.85)");
-  grad.addColorStop(1,"rgba(140,220,255,0)");
-  cx.fillStyle = grad;
-  cx.fillRect(0,0,64,64);
-  return new THREE.CanvasTexture(cv);
-})();
-const muzzleFlash = new THREE.Sprite(new THREE.SpriteMaterial({ map:flashTex, transparent:true, opacity:0, depthTest:false }));
-muzzleFlash.scale.set(.32,.32,.32);
-muzzleFlash.position.set(0,.02,-1.05);
-rifle.add(muzzleFlash);
+moonLight.shadow.mapSize.set(1024,1024);
 
-let recoilT = 0;
-function triggerMuzzleFlash(){
-  recoilT = 1;
-  muzzleFlash.material.opacity = 1;
-  muzzleFlash.material.rotation = Math.random()*Math.PI;
-}
+moonLight.shadow.camera.left=-100;
 
-function setAiming(v){
-  aiming = v;
-  rifle.visible = !v;
-  $("scope").style.display = v ? "block" : "none";
-  $("crosshair").style.display = v ? "none" : "block";
-}
+moonLight.shadow.camera.right=100;
+
+moonLight.shadow.camera.top=100;
+
+moonLight.shadow.camera.bottom=-100;
+
+scene.add(moonLight);
+
+const outpostLight=
+
+new THREE.PointLight(
+
+  0xff8b43,
+
+  2,
+
+  30
+
+);
+
+outpostLight.position.set(
+
+0,
+
+4,
+
+-4
+
+);
+
+scene.add(outpostLight);
 
 /* ============================================================
-   PARTICLES / FIREFLIES
-   ============================================================ */
 
-const pg = new THREE.BufferGeometry();
-const pc = 450;
-const pa = new Float32Array(pc*3);
-for(let i=0;i<pc;i++){
-  pa[i*3] = (Math.random()-.5)*260;
-  pa[i*3+1] = Math.random()*22+.2;
-  pa[i*3+2] = (Math.random()-.5)*260;
-}
-pg.setAttribute("position", new THREE.BufferAttribute(pa, 3));
-const particles = new THREE.Points(pg, new THREE.PointsMaterial({
-  color:0xa8d9b0, size:.075, transparent:true, opacity:.55
-}));
-scene.add(particles);
+   RIFLE
 
-/* ============================================================
-   LIVE TWINKLING STARFIELD
-   Custom-shader points on a high dome so each star twinkles on
-   its own phase; the dome recenters on the player's XZ each
-   frame (skybox-style) so it never appears to drift as you walk,
-   and it renders unaffected by ground fog (distant sky above it).
-   ============================================================ */
+============================================================ */
 
-const starCount = 900;
-const starGeo = new THREE.BufferGeometry();
-const starPos = new Float32Array(starCount*3);
-const starPhase = new Float32Array(starCount);
-const starSize = new Float32Array(starCount);
-for(let i=0;i<starCount;i++){
-  const theta = Math.random()*Math.PI*2;
-  const elevAngle = Math.random()*Math.PI*.47 + .04;
-  const r = 250+Math.random()*170;
-  const y = Math.sin(elevAngle)*r;
-  const hr = Math.cos(elevAngle)*r;
-  starPos[i*3] = Math.cos(theta)*hr;
-  starPos[i*3+1] = y;
-  starPos[i*3+2] = Math.sin(theta)*hr;
-  starPhase[i] = Math.random()*Math.PI*2;
-  starSize[i] = 1.1+Math.random()*2.4;
-}
-starGeo.setAttribute("position", new THREE.BufferAttribute(starPos,3));
-starGeo.setAttribute("aPhase", new THREE.BufferAttribute(starPhase,1));
-starGeo.setAttribute("aSize", new THREE.BufferAttribute(starSize,1));
+const weaponRoot=new THREE.Group();
 
-const starMat = new THREE.ShaderMaterial({
-  uniforms:{ uTime:{ value:0 } },
-  vertexShader:`
-    attribute float aPhase;
-    attribute float aSize;
-    uniform float uTime;
-    varying float vTwinkle;
-    void main(){
-      vTwinkle = .38 + .62*abs(sin(uTime*1.15+aPhase));
-      vec4 mv = modelViewMatrix * vec4(position,1.0);
-      gl_PointSize = aSize * vTwinkle * (320.0/-mv.z);
-      gl_Position = projectionMatrix*mv;
-    }
-  `,
-  fragmentShader:`
-    varying float vTwinkle;
-    void main(){
-      vec2 c = gl_PointCoord-0.5;
-      float d = length(c);
-      float a = smoothstep(0.5,0.0,d);
-      gl_FragColor = vec4(vec3(.85,.9,1.0), a*vTwinkle);
-    }
-  `,
+weaponRoot.position.set(.32,-.28,-.62);
+
+camera.add(weaponRoot);
+
+const weapon=new THREE.Group();
+
+weaponRoot.add(weapon);
+
+/* stock */
+
+const stock=
+
+new THREE.Mesh(
+
+new THREE.BoxGeometry(.09,.11,.45),
+
+black
+
+);
+
+stock.position.z=.3;
+
+weapon.add(stock);
+
+/* receiver */
+
+const receiver=
+
+new THREE.Mesh(
+
+new THREE.BoxGeometry(.12,.1,.38),
+
+metal
+
+);
+
+receiver.position.z=-.02;
+
+weapon.add(receiver);
+
+/* barrel */
+
+const barrel=
+
+new THREE.Mesh(
+
+new THREE.CylinderGeometry(.025,.035,.75,10),
+
+black
+
+);
+
+barrel.rotation.x=Math.PI/2;
+
+barrel.position.z=-.55;
+
+weapon.add(barrel);
+
+/* muzzle */
+
+const muzzle=
+
+new THREE.Mesh(
+
+new THREE.CylinderGeometry(.04,.04,.12,10),
+
+metal
+
+);
+
+muzzle.rotation.x=Math.PI/2;
+
+muzzle.position.z=-.95;
+
+weapon.add(muzzle);
+
+/* magazine */
+
+const magazine=
+
+new THREE.Mesh(
+
+new THREE.BoxGeometry(.055,.18,.09),
+
+black
+
+);
+
+magazine.position.set(
+
+0,-.13,.02
+
+);
+
+weapon.add(magazine);
+
+/* grip */
+
+const grip=
+
+new THREE.Mesh(
+
+new THREE.BoxGeometry(.055,.17,.07),
+
+black
+
+);
+
+grip.position.set(
+
+0,-.12,.15
+
+);
+
+grip.rotation.x=.3;
+
+weapon.add(grip);
+
+/* scope */
+
+const scope=
+
+new THREE.Mesh(
+
+new THREE.CylinderGeometry(
+
+.035,.035,.4,12
+
+),
+
+black
+
+);
+
+scope.rotation.x=Math.PI/2;
+
+scope.position.set(
+
+0,.11,-.05
+
+);
+
+weapon.add(scope);
+
+/* scope lens */
+
+const lens=
+
+new THREE.Mesh(
+
+new THREE.CircleGeometry(.027,16),
+
+new THREE.MeshBasicMaterial({
+
+  color:0x78d7e8
+
+})
+
+);
+
+lens.position.set(
+
+0,.11,-.255
+
+);
+
+weapon.add(lens);
+
+/* laser */
+
+const laser=
+
+new THREE.Mesh(
+
+new THREE.BoxGeometry(.008,.008,.6),
+
+new THREE.MeshBasicMaterial({
+
+  color:0x65dfff
+
+})
+
+);
+
+laser.position.set(
+
+0,-.03,-.55
+
+);
+
+weapon.add(laser);
+
+/* muzzle flash */
+
+const flash=
+
+new THREE.Mesh(
+
+new THREE.SphereGeometry(.13,8,8),
+
+new THREE.MeshBasicMaterial({
+
+  color:0xb9efff,
+
   transparent:true,
-  depthWrite:false,
-  blending:THREE.AdditiveBlending
-});
-const stars = new THREE.Points(starGeo, starMat);
-scene.add(stars);
+
+  opacity:0
+
+})
+
+);
+
+flash.position.z=-1.03;
+
+weapon.add(flash);
 
 /* ============================================================
-   ANCIENT NAGA
-   ============================================================ */
 
-function makeNaga(){
-  const g = new THREE.Group();
+   SCOPE
 
-  for(let i=0;i<13;i++){
-    const seg = new THREE.Mesh(new THREE.SphereGeometry(1.5-i*.055, 16, 10), nagaMat);
-    const a = i*.48;
-    seg.position.set(Math.sin(a)*3.2, 1.2+i*.18, Math.cos(a)*3.2);
-    seg.scale.set(1.2, 1, 1.2);
-    seg.castShadow = true;
-    g.add(seg);
-  }
+============================================================ */
 
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(1.55, 2.0, 6, 14), nagaMat);
-  neck.position.y = 5;
-  neck.rotation.z = -.12;
-  neck.castShadow = true;
-  g.add(neck);
+function setAim(v){
 
-  const head = new THREE.Mesh(new THREE.SphereGeometry(2.0, 18, 14), nagaMat);
-  head.position.set(0, 8, 0);
-  head.scale.set(1.2, .9, 1.35);
-  head.castShadow = true;
+  aiming=v;
+
+  $("scope").style.display=
+
+    v?"block":"none";
+
+  $("crosshair").style.display=
+
+    v?"none":"block";
+
+  weapon.visible=!v;
+
+}
+
+/* ============================================================
+
+   ENEMY SNOWMEN
+
+============================================================ */
+
+function createSnowman(){
+
+  const g=new THREE.Group();
+
+  /* body */
+
+  const body=
+
+  new THREE.Mesh(
+
+    new THREE.SphereGeometry(
+
+      1.15,
+
+      12,
+
+      10
+
+    ),
+
+    enemySnow
+
+  );
+
+  body.position.y=1.1;
+
+  g.add(body);
+
+  /* head */
+
+  const head=
+
+  new THREE.Mesh(
+
+    new THREE.SphereGeometry(
+
+      .78,
+
+      12,
+
+      10
+
+    ),
+
+    enemySnow
+
+  );
+
+  head.position.y=2.45;
+
   g.add(head);
 
-  const eyeMat = new THREE.MeshBasicMaterial({ color:0x9cf6cf });
-  [-.55,.55].forEach(x => {
-    const e = new THREE.Mesh(new THREE.SphereGeometry(.13, 8, 8), eyeMat);
-    e.position.set(x, 8.35, -1.65);
-    g.add(e);
-  });
+  /* black military hood */
 
-  for(let i=0;i<5;i++){
-    const fin = new THREE.Mesh(new THREE.ConeGeometry(1.0, .45, 5), nagaMat);
-    fin.position.set((i-2)*.75, 8.5-i*.15, -.1);
-    fin.rotation.z = (i-2)*.25;
-    g.add(fin);
+  const hood=
+
+  new THREE.Mesh(
+
+    new THREE.SphereGeometry(
+
+      .82,
+
+      12,
+
+      8,
+
+      0,
+
+      Math.PI*2,
+
+      0,
+
+      Math.PI*.55
+
+    ),
+
+    black
+
+  );
+
+  hood.position.y=2.55;
+
+  g.add(hood);
+
+  /* eyes */
+
+  for(let side of [-1,1]){
+
+    const eye=
+
+    new THREE.Mesh(
+
+      new THREE.SphereGeometry(
+
+        .095,
+
+        8,
+
+        8
+
+      ),
+
+      eyeMat
+
+    );
+
+    eye.position.set(
+
+      side*.28,
+
+      2.52,
+
+      -.69
+
+    );
+
+    g.add(eye);
+
   }
 
-  const aura = new THREE.PointLight(0x5ce1bf, 2.4, 26);
-  aura.position.set(0, 7, 0);
-  g.add(aura);
+  /* carrot nose */
 
-  g.visible = false;
-  scene.add(g);
-  return { group:g, hp:600, maxHp:600, lastAttack:0, phase:0 };
-}
-naga = makeNaga();
+  const nose=
 
-/* ============================================================
-   SPIRIT ENEMIES
-   ============================================================ */
+  new THREE.Mesh(
 
-const enemies = [];
-function makeSpirit(kind){
-  // kind "hunter" -> gaunt fire-wraith (aggressive, ember-lit, faster)
-  // kind "spirit" -> pale mist-wraith (paler, teal, slower)
-  const isHunter = kind==="hunter";
-  const scale = isHunter ? 1.05 : .82;
-  const boneMat = mat(isHunter ? 0x39140c : 0x142a24, .75, .05);
-  const skinMat = mat(isHunter ? 0x5c1f12 : 0x1f3f36, .7, .05);
-  const socketMat = new THREE.MeshBasicMaterial({ color:0x000000 });
-  const wingMat = new THREE.MeshStandardMaterial({
-    color: isHunter ? 0x2a0d06 : 0x0a1f1a,
-    roughness:.7, metalness:.05,
-    transparent:true, opacity:.4, side:THREE.DoubleSide
-  });
-  const eyeMat = new THREE.MeshBasicMaterial({ color: isHunter ? 0xff5a1f : 0x8fe6cf });
-  const toothMat = mat(0xcfc9b8, .5, 0);
+    new THREE.ConeGeometry(
 
-  const g = new THREE.Group();
-  g.rotation.x = .18; // permanent hunch
+      .1,
 
-  // gaunt spine — tapering, jagged cone segments instead of smooth spheres
-  const segCount = 6;
-  const spineY = [];
-  for(let i=0;i<segCount;i++){
-    const r = (.26 - i*.03) * scale;
-    const seg = new THREE.Mesh(new THREE.ConeGeometry(Math.max(r,.045), .34*scale, 6), i===0?skinMat:boneMat);
-    seg.rotation.x = Math.PI/2;
-    const y = .18*scale - i*.02*scale;
-    seg.position.set(0, y, i*.34*scale);
-    seg.scale.set(1, 1, 1.15);
-    seg.castShadow = true;
-    g.add(seg);
-    spineY.push(y);
-    // protruding ribs on mid-segments
-    if(i>0 && i<segCount-1 && i%2===0){
-      for(const side of [-1,1]){
-        const rib = new THREE.Mesh(new THREE.ConeGeometry(.02*scale,.22*scale,4), boneMat);
-        rib.rotation.z = side*1.15;
-        rib.position.set(side*.14*scale, y-.02*scale, i*.34*scale);
-        g.add(rib);
-      }
-    }
+      .65,
+
+      7
+
+    ),
+
+    orange
+
+  );
+
+  nose.rotation.x=-Math.PI/2;
+
+  nose.position.set(
+
+    0,
+
+    2.38,
+
+    -.75
+
+  );
+
+  g.add(nose);
+
+  /* coal mouth */
+
+  for(let i=-2;i<=2;i++){
+
+    const coal=
+
+    new THREE.Mesh(
+
+      new THREE.SphereGeometry(
+
+        .055,
+
+        6,
+
+        6
+
+      ),
+
+      black
+
+    );
+
+    coal.position.set(
+
+      i*.13,
+
+      2.18,
+
+      -.72
+
+    );
+
+    g.add(coal);
+
   }
 
-  // elongated skull with hollow sockets, pinprick glow, and an underbite of teeth
-  const skull = new THREE.Mesh(new THREE.ConeGeometry(.16*scale, .58*scale, 7), skinMat);
-  skull.rotation.x = Math.PI/2;
-  skull.scale.set(1,.72,1);
-  skull.position.set(0, .22*scale, -.34*scale);
-  skull.castShadow = true;
-  g.add(skull);
-  const jaw = new THREE.Mesh(new THREE.ConeGeometry(.09*scale,.22*scale,6), boneMat);
-  jaw.rotation.x = -Math.PI/2.15;
-  jaw.position.set(0,.11*scale,-.5*scale);
-  g.add(jaw);
-  for(let i=0;i<4;i++){
-    const tooth = new THREE.Mesh(new THREE.ConeGeometry(.012*scale,.045*scale,4), toothMat);
-    tooth.rotation.x = Math.PI;
-    tooth.position.set((i-1.5)*.028*scale, .155*scale, -.56*scale+ (i%2)*.01);
-    g.add(tooth);
-  }
-  for(const side of [-1,1]){
-    const socket = new THREE.Mesh(new THREE.SphereGeometry(.045*scale,7,6), socketMat);
-    socket.position.set(side*.075*scale,.25*scale,-.55*scale);
-    g.add(socket);
-    const e = new THREE.Mesh(new THREE.SphereGeometry(.015*scale,6,6), eyeMat);
-    e.position.set(side*.075*scale,.25*scale,-.585*scale);
-    g.add(e);
+  /* arms */
+
+  for(let side of [-1,1]){
+
+    const arm=
+
+    new THREE.Mesh(
+
+      new THREE.CylinderGeometry(
+
+        .055,
+
+        .08,
+
+        1.6,
+
+        7
+
+      ),
+
+      bark
+
+    );
+
+    arm.position.set(
+
+      side*1.25,
+
+      1.35,
+
+      0
+
+    );
+
+    arm.rotation.z=
+
+      side*1.1;
+
+    g.add(arm);
+
   }
 
-  // gaunt clawed forelimbs, reaching forward
-  const limbs = [];
-  for(const side of [-1,1]){
-    const limb = new THREE.Group();
-    const upper = new THREE.Mesh(new THREE.CylinderGeometry(.018*scale,.024*scale,.32*scale,6), boneMat);
-    upper.rotation.x = -.9;
-    upper.position.set(0,0,-.1*scale);
-    limb.add(upper);
-    const lower = new THREE.Mesh(new THREE.CylinderGeometry(.014*scale,.02*scale,.28*scale,6), boneMat);
-    lower.rotation.x = -1.9;
-    lower.position.set(0,-.16*scale,-.32*scale);
-    limb.add(lower);
-    for(let c=0;c<3;c++){
-      const claw = new THREE.Mesh(new THREE.ConeGeometry(.009*scale,.09*scale,4), toothMat);
-      claw.rotation.x = -2.3;
-      claw.position.set((c-1)*.025*scale,-.28*scale,-.46*scale);
-      limb.add(claw);
-    }
-    limb.position.set(side*.13*scale,.12*scale,0);
-    g.add(limb);
-    limbs.push(limb);
-  }
+  /* military chest */
 
-  // tattered wings — three ragged shard planes per side instead of one smooth membrane
-  const wings = [];
-  for(const side of [-1,1]){
-    const wingGroup = new THREE.Group();
-    for(let s=0;s<3;s++){
-      const shard = new THREE.Mesh(new THREE.PlaneGeometry(.4*scale-(s*.09*scale), .5*scale-(s*.12*scale)), wingMat);
-      shard.position.set(side*(.18+s*.16)*scale, .05-s*.09*scale, .1+s*.08*scale);
-      shard.rotation.y = side*(.5+s*.18);
-      shard.rotation.z = side*.12*(s-1);
-      wingGroup.add(shard);
-    }
-    wingGroup.position.set(side*.1*scale,.2*scale,.1*scale);
-    g.add(wingGroup);
-    wings.push(wingGroup);
-  }
+  const vest=
 
-  g.userData.wings = wings;
-  g.userData.limbs = limbs;
-  g.userData.eyeGlow = new THREE.PointLight(isHunter?0xff5522:0x6fe0c0, isHunter?.85:.55, 4.2);
-  g.userData.eyeGlow.position.set(0,.25*scale,-.55*scale);
-  g.add(g.userData.eyeGlow);
+  new THREE.Mesh(
+
+    new THREE.BoxGeometry(
+
+      1.65,
+
+      .7,
+
+      .35
+
+    ),
+
+    black
+
+  );
+
+  vest.position.set(
+
+    0,
+
+    1.25,
+
+    -.8
+
+  );
+
+  g.add(vest);
+
+  /* rifle */
+
+  const enemyGun=
+
+  new THREE.Mesh(
+
+    new THREE.BoxGeometry(
+
+      .12,.12,1.4
+
+    ),
+
+    metal
+
+  );
+
+  enemyGun.position.set(
+
+    0,
+
+    1.25,
+
+    -1
+
+  );
+
+  enemyGun.rotation.x=.2;
+
+  g.add(enemyGun);
+
+  g.castShadow=true;
 
   return g;
-}
 
-function spawnSpirit(){
-  const a = Math.random()*Math.PI*2;
-  const d = 22+Math.random()*35;
-  const x = player.position.x + Math.cos(a)*d;
-  const z = player.position.z + Math.sin(a)*d;
-  const kind = Math.random()<.35 ? "hunter" : "spirit";
-  const g = makeSpirit(kind);
-  g.position.set(x, terrainHeight(x,z)+1.3, z);
-  scene.add(g);
-  enemies.push({
-    g, kind,
-    hp: kind==="hunter" ? 55 : 35,
-    speed: kind==="hunter" ? 3.7 : 2.4,
-    last:0,
-    phase:Math.random()*10,
-    jitterSeed:Math.random()*100,
-    screeched:false,
-    lurchT:0
-  });
-}
-for(let i=0;i<5;i++){
-  spawnSpirit();
 }
 
 /* ============================================================
-   GAMELAN AMBIENT SOUNDTRACK (procedural, Web Audio)
-   ============================================================ */
 
-let audioCtx = null;
-let masterGain = null;
-let musicOn = true;
-let musicStarted = false;
-let gongTimer = null;
-let belltimer = null;
-let droneNodes = null;
+   SPAWN ENEMY
 
-function buildImpulse(ctx, duration, decay){
-  const rate = ctx.sampleRate;
-  const len = Math.floor(rate*duration);
-  const impulse = ctx.createBuffer(2, len, rate);
-  for(let ch=0; ch<2; ch++){
-    const data = impulse.getChannelData(ch);
-    for(let i=0;i<len;i++){
-      data[i] = (Math.random()*2-1) * Math.pow(1-i/len, decay);
-    }
-  }
-  return impulse;
+============================================================ */
+
+function spawnEnemy(){
+
+  const angle=Math.random()*Math.PI*2;
+
+  const dist=25+Math.random()*45;
+
+  const x=
+
+    player.position.x+
+
+    Math.cos(angle)*dist;
+
+  const z=
+
+    player.position.z+
+
+    Math.sin(angle)*dist;
+
+  const g=createSnowman();
+
+  g.position.set(
+
+    x,
+
+    terrain(x,z),
+
+    z
+
+  );
+
+  scene.add(g);
+
+  enemies.push({
+
+    g,
+
+    hp:55,
+
+    speed:1.5+Math.random()*1.3,
+
+    attack:0,
+
+    phase:Math.random()*10,
+
+    spotted:false
+
+  });
+
 }
 
-// approximated slendro-style scale, rooted low for a dark ambient feel
-const gamelanScale = [174.6, 196.0, 233.1, 261.6, 293.7, 349.2, 392.0, 466.2];
+for(let i=0;i<6;i++){
+
+  spawnEnemy();
+
+}
+
+/* ============================================================
+
+   BOSS
+
+============================================================ */
+
+function createBoss(){
+
+  const g=new THREE.Group();
+
+  const body=
+
+  new THREE.Mesh(
+
+    new THREE.SphereGeometry(
+
+      3,
+
+      18,
+
+      14
+
+    ),
+
+    enemyBlack
+
+  );
+
+  body.position.y=3;
+
+  g.add(body);
+
+  const head=
+
+  new THREE.Mesh(
+
+    new THREE.SphereGeometry(
+
+      2,
+
+      16,
+
+      12
+
+    ),
+
+    enemySnow
+
+  );
+
+  head.position.y=6.4;
+
+  g.add(head);
+
+  const helmet=
+
+  new THREE.Mesh(
+
+    new THREE.SphereGeometry(
+
+      2.05,
+
+      16,
+
+      8,
+
+      0,
+
+      Math.PI*2,
+
+      0,
+
+      Math.PI*.55
+
+    ),
+
+    black
+
+  );
+
+  helmet.position.y=6.7;
+
+  g.add(helmet);
+
+  for(let side of [-1,1]){
+
+    const eye=
+
+    new THREE.Mesh(
+
+      new THREE.SphereGeometry(
+
+        .22,
+
+        8,
+
+        8
+
+      ),
+
+      eyeMat
+
+    );
+
+    eye.position.set(
+
+      side*.65,
+
+      6.45,
+
+      -1.75
+
+    );
+
+    g.add(eye);
+
+  }
+
+  for(let side of [-1,1]){
+
+    const arm=
+
+    new THREE.Mesh(
+
+      new THREE.CylinderGeometry(
+
+        .14,
+
+        .2,
+
+        4,
+
+        8
+
+      ),
+
+      enemyBlack
+
+    );
+
+    arm.position.set(
+
+      side*3.1,
+
+      3.2,
+
+      0
+
+    );
+
+    arm.rotation.z=side*.85;
+
+    g.add(arm);
+
+  }
+
+  const glow=
+
+  new THREE.PointLight(
+
+    0xff2933,
+
+    2,
+
+    20
+
+  );
+
+  glow.position.set(
+
+    0,
+
+    6,
+
+    -1
+
+  );
+
+  g.add(glow);
+
+  g.visible=false;
+
+  scene.add(g);
+
+  return {
+
+    g,
+
+    hp:500,
+
+    maxHp:500,
+
+    attack:0
+
+  };
+
+}
+
+boss=createBoss();
+
+/* ============================================================
+
+   AUDIO
+
+============================================================ */
+
+let audio=null;
+
+let master=null;
+
+let soundOn=true;
 
 function initAudio(){
-  if(audioCtx) return;
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-  masterGain = audioCtx.createGain();
-  masterGain.gain.value = 0;
-  masterGain.connect(audioCtx.destination);
+  if(audio)return;
 
-  const reverb = audioCtx.createConvolver();
-  reverb.buffer = buildImpulse(audioCtx, 4.5, 2.8);
-  reverb.connect(masterGain);
+  audio=
 
-  const dry = audioCtx.createGain();
-  dry.gain.value = .4;
-  dry.connect(masterGain);
+  new (
 
-  const wet = audioCtx.createGain();
-  wet.gain.value = .68;
-  wet.connect(reverb);
+    window.AudioContext||
 
-  audioCtx._dry = dry;
-  audioCtx._wet = wet;
+    window.webkitAudioContext
 
-  // low horror drone, always running under the gamelan — kept very soft
-  const drone = audioCtx.createOscillator();
-  drone.type = "sine";
-  drone.frequency.value = 54;
-  const drone2 = audioCtx.createOscillator();
-  drone2.type = "sine";
-  drone2.frequency.value = 54*1.5005; // slow beating for unease
-  const droneGain = audioCtx.createGain();
-  droneGain.gain.value = .06;
-  const lfo = audioCtx.createOscillator();
-  lfo.type = "sine";
-  lfo.frequency.value = .035;
-  const lfoGain = audioCtx.createGain();
-  lfoGain.gain.value = .02;
-  lfo.connect(lfoGain);
-  lfoGain.connect(droneGain.gain);
-  drone.connect(droneGain);
-  drone2.connect(droneGain);
-  droneGain.connect(dry);
-  droneGain.connect(wet);
-  drone.start();
-  drone2.start();
-  lfo.start();
-  droneNodes = { drone, drone2, droneGain, lfo };
+  )();
+
+  master=
+
+  audio.createGain();
+
+  master.gain.value=.35;
+
+  master.connect(
+
+    audio.destination
+
+  );
+
 }
 
-function playBell(freq, time, vel){
-  const ctx = audioCtx;
-  const osc1 = ctx.createOscillator();
-  osc1.type = "sine";
-  osc1.frequency.value = freq;
-  const osc2 = ctx.createOscillator();
-  osc2.type = "sine";
-  osc2.frequency.value = freq*2.76; // inharmonic partial, gives a metallophone-like timbre
-  const g1 = ctx.createGain();
-  const g2 = ctx.createGain();
-  const pan = ctx.createStereoPanner();
-  pan.pan.value = Math.max(-1, Math.min(1, (Math.random()-.5)*1.4));
-  osc1.connect(g1);
-  osc2.connect(g2);
-  g1.connect(pan);
-  g2.connect(pan);
-  pan.connect(ctx._dry);
-  pan.connect(ctx._wet);
-  const peak = .095*vel;
-  g1.gain.setValueAtTime(0, time);
-  g1.gain.linearRampToValueAtTime(peak, time+.03);
-  g1.gain.exponentialRampToValueAtTime(.0001, time+4.2);
-  g2.gain.setValueAtTime(0, time);
-  g2.gain.linearRampToValueAtTime(peak*.2, time+.03);
-  g2.gain.exponentialRampToValueAtTime(.0001, time+1.8);
-  osc1.start(time);
-  osc1.stop(time+4.3);
-  osc2.start(time);
-  osc2.stop(time+1.9);
-}
+function soundShot(){
 
-function playGong(time, vel){
-  const ctx = audioCtx;
-  const osc = ctx.createOscillator();
-  osc.type = "sine";
-  osc.frequency.value = 50;
-  const osc2 = ctx.createOscillator();
-  osc2.type = "sine";
-  osc2.frequency.value = 50*1.498;
-  const g = ctx.createGain();
-  osc.connect(g);
-  osc2.connect(g);
-  g.connect(ctx._dry);
-  g.connect(ctx._wet);
-  g.gain.setValueAtTime(0, time);
-  g.gain.linearRampToValueAtTime(.16*vel, time+.15);
-  g.gain.exponentialRampToValueAtTime(.0001, time+8.5);
-  osc.start(time);
-  osc.stop(time+8.6);
-  osc2.start(time);
-  osc2.stop(time+8.6);
-}
+  if(!soundOn)return;
 
-function playScreech(hunter){
-  if(!audioCtx) return;
-  const ctx = audioCtx;
-  const now = ctx.currentTime;
-  const osc = ctx.createOscillator();
-  osc.type = "sawtooth";
-  const startF = hunter ? 900+Math.random()*300 : 650+Math.random()*250;
-  osc.frequency.setValueAtTime(startF, now);
-  osc.frequency.exponentialRampToValueAtTime(startF*.35, now+.5);
-  osc.frequency.exponentialRampToValueAtTime(startF*.9, now+.7);
-  const filt = ctx.createBiquadFilter();
-  filt.type = "bandpass";
-  filt.frequency.value = hunter?1400:1000;
-  filt.Q.value = 4;
-  const g = ctx.createGain();
-  g.gain.setValueAtTime(0, now);
-  g.gain.linearRampToValueAtTime(.14, now+.06);
-  g.gain.exponentialRampToValueAtTime(.0001, now+.75);
-  const pan = ctx.createStereoPanner();
-  pan.pan.value = Math.max(-1,Math.min(1,(Math.random()-.5)*1.6));
-  osc.connect(filt);
-  filt.connect(g);
-  g.connect(pan);
-  pan.connect(ctx._dry);
-  pan.connect(ctx._wet);
-  osc.start(now);
-  osc.stop(now+.8);
-}
-
-function playShot(uvBoost){
-  if(!audioCtx) return;
-  const ctx = audioCtx;
-  const now = ctx.currentTime;
-  // sub punch
-  const osc = ctx.createOscillator();
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(uvBoost?170:130, now);
-  osc.frequency.exponentialRampToValueAtTime(40, now+.09);
-  const og = ctx.createGain();
-  og.gain.setValueAtTime(.5, now);
-  og.gain.exponentialRampToValueAtTime(.001, now+.14);
-  osc.connect(og);
-  og.connect(ctx._dry);
-  osc.start(now);
-  osc.stop(now+.15);
-  // crisp noise crack
-  const bufLen = Math.floor(ctx.sampleRate*.05);
-  const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
-  const d = buf.getChannelData(0);
-  for(let i=0;i<bufLen;i++) d[i] = (Math.random()*2-1)*Math.pow(1-i/bufLen, 2.2);
-  const noise = ctx.createBufferSource();
-  noise.buffer = buf;
-  const nf = ctx.createBiquadFilter();
-  nf.type = "highpass";
-  nf.frequency.value = uvBoost?1400:900;
-  const ng = ctx.createGain();
-  ng.gain.value = uvBoost?.35:.22;
-  noise.connect(nf);
-  nf.connect(ng);
-  ng.connect(ctx._dry);
-  ng.connect(ctx._wet);
-  noise.start(now);
-}
-
-function scheduleBells(){
-  if(!musicOn || !audioCtx) return;
-  const intensity = nagaAwake ? 1.15 : 1;
-  const now = audioCtx.currentTime;
-  const note = gamelanScale[Math.floor(Math.random()*gamelanScale.length)] * (Math.random()<.3?2:1);
-  playBell(note, now+.02, .4*intensity+Math.random()*.15);
-  const next = (nagaAwake ? (1.2+Math.random()*1.2) : (2.4+Math.random()*2.8));
-  belltimer = setTimeout(scheduleBells, next*1000);
-}
-
-function scheduleGong(){
-  if(!musicOn || !audioCtx) return;
-  const now = audioCtx.currentTime;
-  playGong(now+.02, nagaAwake ? .85 : .55);
-  const next = nagaAwake ? (8+Math.random()*4) : (18+Math.random()*12);
-  gongTimer = setTimeout(scheduleGong, next*1000);
-}
-
-function startMusic(){
   initAudio();
-  if(audioCtx.state==="suspended") audioCtx.resume();
-  masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
-  masterGain.gain.linearRampToValueAtTime(musicOn?.5:0, audioCtx.currentTime+2.5);
-  if(!musicStarted){
-    musicStarted = true;
-    scheduleBells();
-    scheduleGong();
-  }
+
+  const now=audio.currentTime;
+
+  const osc=
+
+  audio.createOscillator();
+
+  const gain=
+
+  audio.createGain();
+
+  osc.type="sawtooth";
+
+  osc.frequency.setValueAtTime(
+
+    150,
+
+    now
+
+  );
+
+  osc.frequency.exponentialRampToValueAtTime(
+
+    45,
+
+    now+.12
+
+  );
+
+  gain.gain.setValueAtTime(
+
+    .4,
+
+    now
+
+  );
+
+  gain.gain.exponentialRampToValueAtTime(
+
+    .001,
+
+    now+.15
+
+  );
+
+  osc.connect(gain);
+
+  gain.connect(master);
+
+  osc.start(now);
+
+  osc.stop(now+.16);
+
 }
 
-function toggleMusic(){
-  musicOn = !musicOn;
-  $("sound").textContent = "♪ SOUND: " + (musicOn ? "ON" : "OFF");
-  if(!audioCtx){
-    if(musicOn) startMusic();
-    return;
-  }
-  if(musicOn){
-    audioCtx.resume();
-    masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
-    masterGain.gain.linearRampToValueAtTime(.5, audioCtx.currentTime+1.2);
-    if(!belltimer) scheduleBells();
-    if(!gongTimer) scheduleGong();
-  }else{
-    masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
-    masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+.6);
-    clearTimeout(belltimer);
-    clearTimeout(gongTimer);
-    belltimer = null;
-    gongTimer = null;
-  }
-}
+function soundHit(){
 
-$("sound").addEventListener("click", toggleMusic);
-window.addEventListener("keydown", e => {
-  if(e.code==="KeyM") toggleMusic();
-});
+  if(!soundOn)return;
 
-/* ============================================================
-   INPUT
-   ============================================================ */
+  initAudio();
 
-window.addEventListener("keydown", e => {
-  keys[e.code] = true;
-  if(e.code==="KeyC"){ setAiming(true); }
-  if(e.code==="KeyF"){ uvHeld=true; }
-  if(e.code==="Space"){ e.preventDefault(); dodge(); }
-});
+  const osc=
 
-window.addEventListener("keyup", e => {
-  keys[e.code] = false;
-  if(e.code==="KeyC"){ setAiming(false); }
-  if(e.code==="KeyF"){ uvHeld=false; }
-});
+  audio.createOscillator();
 
-canvas.addEventListener("contextmenu", e => e.preventDefault());
+  const gain=
 
-canvas.addEventListener("mousedown", e => {
-  if(!started) return;
-  if(e.button===2) uvHeld=true;
-  if(e.button===0){
-    if(document.pointerLockElement!==canvas && !isMobile){
-      canvas.requestPointerLock();
-    }else{
-      fire();
-    }
-  }
-});
+  audio.createGain();
 
-window.addEventListener("mouseup", e => {
-  if(e.button===2) uvHeld=false;
-});
+  const now=audio.currentTime;
 
-document.addEventListener("mousemove", e => {
-  if(document.pointerLockElement!==canvas) return;
-  const s = aiming ? .0005 : .0025;
-  yaw -= e.movementX*s;
-  pitch -= e.movementY*s;
-  pitch = Math.max(-1.25, Math.min(1.25, pitch));
-  player.rotation.y = yaw;
-  camera.rotation.x = pitch;
-});
+  osc.type="square";
 
-/* ============================================================
-   DODGE
-   ============================================================ */
+  osc.frequency.value=90;
 
-function dodge(){
-  if(stamina<25 || dodgeTime>0 || !alive) return;
-  stamina -= 25;
-  dodgeTime = .38;
-}
+  gain.gain.setValueAtTime(.18,now);
 
-/* ============================================================
-   MOBILE
-   ============================================================ */
+  gain.gain.exponentialRampToValueAtTime(
 
-if(isMobile){
-  const joy = $("joy");
-  const knob = $("knob");
-  let jid = null;
-  let cx=0;
-  let cy=0;
+    .001,
 
-  joy.addEventListener("touchstart", e => {
-    e.preventDefault();
-    const t = e.changedTouches[0];
-    jid = t.identifier;
-    const r = joy.getBoundingClientRect();
-    cx = r.left+r.width/2;
-    cy = r.top+r.height/2;
-  }, {passive:false});
+    now+.12
 
-  joy.addEventListener("touchmove", e => {
-    e.preventDefault();
-    for(const t of e.changedTouches){
-      if(t.identifier!==jid) continue;
-      let dx = t.clientX-cx;
-      let dy = t.clientY-cy;
-      let l = Math.hypot(dx,dy);
-      const m = 45;
-      if(l>m){ dx = dx/l*m; dy = dy/l*m; }
-      knob.style.left = 37+dx+"px";
-      knob.style.top = 37+dy+"px";
-      move.x = dx/m;
-      move.y = dy/m;
-    }
-  }, {passive:false});
+  );
 
-  const end = e => {
-    for(const t of e.changedTouches){
-      if(t.identifier===jid){
-        jid=null;
-        move.x=0;
-        move.y=0;
-        knob.style.left = "37px";
-        knob.style.top = "37px";
-      }
-    }
-  };
-  joy.addEventListener("touchend", end);
-  joy.addEventListener("touchcancel", end);
+  osc.connect(gain);
 
-  let lid=null;
-  let lx=0;
-  let ly=0;
+  gain.connect(master);
 
-  canvas.addEventListener("touchstart", e => {
-    if(e.target.closest && e.target.closest(".btn")) return;
-    const t = e.changedTouches[0];
-    lid = t.identifier;
-    lx = t.clientX;
-    ly = t.clientY;
-  }, {passive:false});
+  osc.start(now);
 
-  canvas.addEventListener("touchmove", e => {
-    if(lid===null) return;
-    e.preventDefault();
-    for(const t of e.changedTouches){
-      if(t.identifier!==lid) continue;
-      const ms = aiming ? .0016 : .004;
-      yaw -= (t.clientX-lx)*ms;
-      pitch -= (t.clientY-ly)*ms;
-      pitch = Math.max(-1.25, Math.min(1.25, pitch));
-      player.rotation.y = yaw;
-      camera.rotation.x = pitch;
-      lx = t.clientX;
-      ly = t.clientY;
-    }
-  }, {passive:false});
+  osc.stop(now+.13);
 
-  canvas.addEventListener("touchend", e => {
-    for(const t of e.changedTouches){
-      if(t.identifier===lid) lid=null;
-    }
-  });
-
-  $("fire").addEventListener("touchstart", e => { e.preventDefault(); fire(); });
-  $("uvb").addEventListener("touchstart", e => { e.preventDefault(); uvHeld=true; });
-  $("uvb").addEventListener("touchend", e => { e.preventDefault(); uvHeld=false; });
-  $("aim").addEventListener("touchstart", e => { e.preventDefault(); setAiming(true); });
-  $("aim").addEventListener("touchend", e => { e.preventDefault(); setAiming(false); });
-  $("sprint").addEventListener("touchstart", e => { e.preventDefault(); sprinting=true; });
-  $("sprint").addEventListener("touchend", e => { e.preventDefault(); sprinting=false; });
-  $("dodge").addEventListener("touchstart", e => { e.preventDefault(); dodge(); });
 }
 
 /* ============================================================
+
    MESSAGE
-   ============================================================ */
 
-function showMsg(s){
-  $("msg").textContent = s;
-  $("msg").style.opacity = 1;
-  clearTimeout(messageTimer);
-  messageTimer = setTimeout(() => { $("msg").style.opacity=0; }, 2800);
+============================================================ */
+
+let msgTimer;
+
+function message(text){
+
+  $("message").textContent=text;
+
+  $("message").style.opacity=1;
+
+  clearTimeout(msgTimer);
+
+  msgTimer=setTimeout(()=>{
+
+    $("message").style.opacity=0;
+
+  },2500);
+
 }
 
 /* ============================================================
+
    FIRE
-   ============================================================ */
+
+============================================================ */
 
 function fire(){
-  if(!started || !alive || dodgeTime>0) return;
-  triggerMuzzleFlash();
-  playShot(uvHeld);
-  const origin = new THREE.Vector3();
-  const dir = new THREE.Vector3();
+
+  if(
+
+    !started||
+
+    !alive||
+
+    fireCooldown>0||
+
+    reloadTimer>0
+
+  )return;
+
+  if(ammo<=0){
+
+    reload();
+
+    return;
+
+  }
+
+  ammo--;
+
+  fireCooldown=.16;
+
+  flash.material.opacity=1;
+
+  soundShot();
+
+  setTimeout(()=>{
+
+    flash.material.opacity=0;
+
+  },55);
+
+  const origin=
+
+  new THREE.Vector3();
+
+  const direction=
+
+  new THREE.Vector3();
+
   camera.getWorldPosition(origin);
-  camera.getWorldDirection(dir);
-  let best = null;
-  let bd = Infinity;
-  const targets = [...enemies];
-  if(nagaAwake){
-    targets.push({ g:naga.group, hp:naga.hp, isNaga:true });
-  }
-  for(const e of targets){
-    if(e.g && !e.g.visible) continue;
-    const pos = e.isNaga ? naga.group.position : e.g.position;
-    const d = pos.distanceTo(origin);
-    if(d>55) continue;
-    const to = pos.clone().sub(origin).normalize();
-    const ang = dir.angleTo(to);
-    const radius = e.isNaga ? .15 : .12;
-    if(ang < radius+(1/d)*.8 && d<bd){
-      best=e;
-      bd=d;
+
+  camera.getWorldDirection(direction);
+
+  let closest=null;
+
+  let distance=Infinity;
+
+  for(const e of enemies){
+
+    const pos=e.g.position.clone();
+
+    const to=
+
+      pos.sub(origin);
+
+    const d=to.length();
+
+    if(d>70)continue;
+
+    to.normalize();
+
+    const angle=
+
+      direction.angleTo(to);
+
+    if(
+
+      angle<
+
+      .16+(1/d)*.7
+
+      &&
+
+      d<distance
+
+    ){
+
+      closest=e;
+
+      distance=d;
+
     }
+
   }
-  if(!best) return;
-  const dmg = (uvHeld?34:22) * (best.isNaga ? (uvHeld?1.35:.55) : 1);
-  best.hp -= dmg;
-  if(best.isNaga){
-    naga.hp = best.hp;
-  }
-  if(best.hp<=0){
-    if(best.isNaga){
-      showMsg("THE NAGA RETURNS TO THE DEEP");
-      naga.group.visible = false;
-      $("boss").style.display = "none";
-      $("objective").textContent = "Escape the Naga valley";
-      nagaAwake=false;
-    }else{
-      scene.remove(best.g);
-      enemies.splice(enemies.indexOf(best), 1);
-      kills++;
-      if(kills%3===0){
-        showMsg(kills+" wyrmlings banished");
+
+  if(
+
+    bossAwake &&
+
+    boss.g.visible
+
+  ){
+
+    const pos=
+
+      boss.g.position.clone();
+
+    const to=
+
+      pos.sub(origin);
+
+    const d=to.length();
+
+    if(d<100){
+
+      to.normalize();
+
+      const angle=
+
+        direction.angleTo(to);
+
+      if(
+
+        angle<
+
+        .18+(1/d)*.8
+
+      ){
+
+        closest=boss;
+
+        distance=d;
+
       }
+
     }
+
   }
+
+  if(!closest)return;
+
+  const damage=
+
+    closest===boss
+
+    ? (aiming?45:25)
+
+    : (aiming?42:28);
+
+  closest.hp-=damage;
+
+  soundHit();
+
+  if(closest.hp<=0){
+
+    if(closest===boss){
+
+      bossAwake=false;
+
+      boss.g.visible=false;
+
+      $("boss").style.display="none";
+
+      $("missionText").textContent=
+
+        "MISSION COMPLETE — EXTRACT FROM SECTOR";
+
+      message(
+
+        "THE FROZEN COMMANDER HAS FALLEN"
+
+      );
+
+    }else{
+
+      scene.remove(closest.g);
+
+      enemies.splice(
+
+        enemies.indexOf(closest),
+
+        1
+
+      );
+
+      kills++;
+
+      if(kills%3===0){
+
+        message(
+
+          kills+
+
+          " HOSTILES ELIMINATED"
+
+        );
+
+      }
+
+    }
+
+  }
+
 }
 
 /* ============================================================
+
+   RELOAD
+
+============================================================ */
+
+function reload(){
+
+  if(
+
+    reloadTimer>0||
+
+    ammo===maxAmmo||
+
+    !alive
+
+  )return;
+
+  reloadTimer=1.5;
+
+  message("RELOADING...");
+
+}
+
+/* ============================================================
+
+   MELEE
+
+============================================================ */
+
+function melee(){
+
+  if(!alive)return;
+
+  const origin=
+
+  new THREE.Vector3();
+
+  const direction=
+
+  new THREE.Vector3();
+
+  camera.getWorldPosition(origin);
+
+  camera.getWorldDirection(direction);
+
+  let closest=null;
+
+  let dist=Infinity;
+
+  for(const e of enemies){
+
+    const d=
+
+      e.g.position.distanceTo(
+
+        player.position
+
+      );
+
+    if(d<3 && d<dist){
+
+      closest=e;
+
+      dist=d;
+
+    }
+
+  }
+
+  if(closest){
+
+    closest.hp-=70;
+
+    message("MELEE HIT");
+
+    if(closest.hp<=0){
+
+      scene.remove(closest.g);
+
+      enemies.splice(
+
+        enemies.indexOf(closest),
+
+        1
+
+      );
+
+      kills++;
+
+    }
+
+  }
+
+}
+
+/* ============================================================
+
    DAMAGE
-   ============================================================ */
+
+============================================================ */
 
 function damage(amount){
-  if(dodgeTime>0) return;
-  hp -= amount;
-  $("damage").style.opacity = .7;
-  setTimeout(() => { $("damage").style.opacity=0; }, 130);
-  if(hp<=0) die();
-}
 
-function die(){
-  alive=false;
-  if(document.pointerLockElement){
-    document.exitPointerLock();
+  if(dodgeTimer>0)return;
+
+  hp-=amount;
+
+  $("damage").style.opacity=.8;
+
+  setTimeout(()=>{
+
+    $("damage").style.opacity=0;
+
+  },120);
+
+  if(hp<=0){
+
+    alive=false;
+
+    $("death").style.display="flex";
+
   }
-  $("death").style.display = "flex";
+
 }
 
 /* ============================================================
-   RESET
-   ============================================================ */
 
-function reset(){
-  hp=100;
-  stamina=100;
-  uv=100;
-  alive=true;
-  kills=0;
-  relics=0;
-  shrineReached=false;
-  nagaAwake=false;
-  naga.hp = naga.maxHp;
-  naga.group.visible = false;
-  enemies.forEach(e => scene.remove(e.g));
-  enemies.length=0;
-  for(let i=0;i<5;i++) spawnSpirit();
-  player.position.set(0, terrainHeight(0,105)+1.7, 105);
-  yaw=0;
-  pitch=0;
-  player.rotation.y=0;
-  camera.rotation.x=0;
-  $("death").style.display = "none";
-  $("boss").style.display = "none";
-  $("objective").textContent = "Find the ancient Naga shrine";
-  showMsg("The jungle stirs again...");
+   DODGE
+
+============================================================ */
+
+function dodge(){
+
+  if(stamina<25)return;
+
+  stamina-=25;
+
+  dodgeTimer=.35;
+
 }
-$("restart").onclick = reset;
 
 /* ============================================================
-   START GAME
-   ============================================================ */
 
-$("start").onclick = () => {
-  $("title").style.display = "none";
-  started=true;
+   INPUT
+
+============================================================ */
+
+window.addEventListener(
+
+"keydown",
+
+e=>{
+
+  if(e.code==="KeyW")moveY=-1;
+
+  if(e.code==="KeyS")moveY=1;
+
+  if(e.code==="KeyA")moveX=-1;
+
+  if(e.code==="KeyD")moveX=1;
+
+  if(e.code==="ShiftLeft"){
+
+    sprinting=true;
+
+  }
+
+  if(e.code==="KeyR"){
+
+    reload();
+
+  }
+
+  if(e.code==="Space"){
+
+    e.preventDefault();
+
+    dodge();
+
+  }
+
+  if(e.code==="KeyC"){
+
+    setAim(true);
+
+  }
+
+  if(e.code==="KeyF"){
+
+    fire();
+
+  }
+
+  if(e.code==="KeyV"){
+
+    melee();
+
+  }
+
+});
+
+window.addEventListener(
+
+"keyup",
+
+e=>{
+
+  if(e.code==="KeyW" && moveY<0)moveY=0;
+
+  if(e.code==="KeyS" && moveY>0)moveY=0;
+
+  if(e.code==="KeyA" && moveX<0)moveX=0;
+
+  if(e.code==="KeyD" && moveX>0)moveX=0;
+
+  if(e.code==="ShiftLeft"){
+
+    sprinting=false;
+
+  }
+
+  if(e.code==="KeyC"){
+
+    setAim(false);
+
+  }
+
+});
+
+/* ============================================================
+
+   MOUSE
+
+============================================================ */
+
+canvas.addEventListener(
+
+"mousedown",
+
+e=>{
+
+  if(!started)return;
+
   if(!isMobile){
-    canvas.requestPointerLock();
+
+    if(
+
+      document.pointerLockElement!==canvas
+
+    ){
+
+      canvas.requestPointerLock();
+
+    }else{
+
+      if(e.button===0)fire();
+
+      if(e.button===2)setAim(true);
+
+    }
+
   }
-  startMusic();
-  showMsg("Nagaloka awakens...");
+
+});
+
+window.addEventListener(
+
+"mouseup",
+
+e=>{
+
+  if(e.button===2){
+
+    setAim(false);
+
+  }
+
+});
+
+window.addEventListener(
+
+"contextmenu",
+
+e=>e.preventDefault()
+
+);
+
+document.addEventListener(
+
+"mousemove",
+
+e=>{
+
+  if(
+
+    document.pointerLockElement!==canvas
+
+  )return;
+
+  const sensitivity=
+
+    aiming?.00045:.0023;
+
+  yaw-=e.movementX*sensitivity;
+
+  pitch-=e.movementY*sensitivity;
+
+  pitch=
+
+    Math.max(
+
+      -1.2,
+
+      Math.min(1.2,pitch)
+
+    );
+
+  player.rotation.y=yaw;
+
+  camera.rotation.x=pitch;
+
+});
+
+/* ============================================================
+
+   MOBILE CONTROLS
+
+============================================================ */
+
+if(isMobile){
+
+  const joy=$("joy");
+
+  const knob=$("knob");
+
+  let joystickID=null;
+
+  let centerX=0;
+
+  let centerY=0;
+
+  joy.addEventListener(
+
+    "touchstart",
+
+    e=>{
+
+      e.preventDefault();
+
+      const t=e.changedTouches[0];
+
+      joystickID=t.identifier;
+
+      const r=
+
+        joy.getBoundingClientRect();
+
+      centerX=
+
+        r.left+r.width/2;
+
+      centerY=
+
+        r.top+r.height/2;
+
+    },
+
+    {passive:false}
+
+  );
+
+  joy.addEventListener(
+
+    "touchmove",
+
+    e=>{
+
+      e.preventDefault();
+
+      for(const t of e.changedTouches){
+
+        if(
+
+          t.identifier!==joystickID
+
+        )continue;
+
+        let dx=
+
+          t.clientX-centerX;
+
+        let dy=
+
+          t.clientY-centerY;
+
+        const max=45;
+
+        const len=
+
+          Math.hypot(dx,dy);
+
+        if(len>max){
+
+          dx=dx/len*max;
+
+          dy=dy/len*max;
+
+        }
+
+        knob.style.left=
+
+          38+dx+"px";
+
+        knob.style.top=
+
+          38+dy+"px";
+
+        moveX=dx/max;
+
+        moveY=dy/max;
+
+      }
+
+    },
+
+    {passive:false}
+
+  );
+
+  joy.addEventListener(
+
+    "touchend",
+
+    e=>{
+
+      joystickID=null;
+
+      moveX=0;
+
+      moveY=0;
+
+      knob.style.left="38px";
+
+      knob.style.top="38px";
+
+    }
+
+  );
+
+  let lookID=null;
+
+  let lx=0;
+
+  let ly=0;
+
+  canvas.addEventListener(
+
+    "touchstart",
+
+    e=>{
+
+      const t=e.changedTouches[0];
+
+      lookID=t.identifier;
+
+      lx=t.clientX;
+
+      ly=t.clientY;
+
+    },
+
+    {passive:false}
+
+  );
+
+  canvas.addEventListener(
+
+    "touchmove",
+
+    e=>{
+
+      if(lookID===null)return;
+
+      e.preventDefault();
+
+      for(const t of e.changedTouches){
+
+        if(
+
+          t.identifier!==lookID
+
+        )continue;
+
+        const sens=
+
+          aiming?.0015:.004;
+
+        yaw-=
+
+          (t.clientX-lx)*sens;
+
+        pitch-=
+
+          (t.clientY-ly)*sens;
+
+        pitch=
+
+          Math.max(
+
+            -1.2,
+
+            Math.min(1.2,pitch)
+
+          );
+
+        player.rotation.y=yaw;
+
+        camera.rotation.x=pitch;
+
+        lx=t.clientX;
+
+        ly=t.clientY;
+
+      }
+
+    },
+
+    {passive:false}
+
+  );
+
+  canvas.addEventListener(
+
+    "touchend",
+
+    e=>{
+
+      lookID=null;
+
+    }
+
+  );
+
+  $("fire").addEventListener(
+
+    "touchstart",
+
+    e=>{
+
+      e.preventDefault();
+
+      fire();
+
+    },
+
+    {passive:false}
+
+  );
+
+  $("aim").addEventListener(
+
+    "touchstart",
+
+    e=>{
+
+      e.preventDefault();
+
+      setAim(true);
+
+    },
+
+    {passive:false}
+
+  );
+
+  $("aim").addEventListener(
+
+    "touchend",
+
+    e=>{
+
+      e.preventDefault();
+
+      setAim(false);
+
+    },
+
+    {passive:false}
+
+  );
+
+  $("reload").addEventListener(
+
+    "touchstart",
+
+    e=>{
+
+      e.preventDefault();
+
+      reload();
+
+    },
+
+    {passive:false}
+
+  );
+
+  $("run").addEventListener(
+
+    "touchstart",
+
+    e=>{
+
+      e.preventDefault();
+
+      sprinting=true;
+
+    },
+
+    {passive:false}
+
+  );
+
+  $("run").addEventListener(
+
+    "touchend",
+
+    e=>{
+
+      e.preventDefault();
+
+      sprinting=false;
+
+    },
+
+    {passive:false}
+
+  );
+
+  $("knife").addEventListener(
+
+    "touchstart",
+
+    e=>{
+
+      e.preventDefault();
+
+      melee();
+
+    },
+
+    {passive:false}
+
+  );
+
+}
+
+/* ============================================================
+
+   SOUND BUTTON
+
+============================================================ */
+
+$("sound").onclick=()=>{
+
+  soundOn=!soundOn;
+
+  $("sound").textContent=
+
+    "♪ SOUND "+
+
+    (soundOn?"ON":"OFF");
+
 };
 
 /* ============================================================
-   GAME UPDATE
-   ============================================================ */
 
-function update(dt,t){
-  if(!started || !alive) return;
-  if(dodgeTime>0) dodgeTime -= dt;
+   START
 
-  let mx = isMobile ? move.x : ((keys.KeyD?1:0) - (keys.KeyA?1:0));
-  let mz = isMobile ? move.y : ((keys.KeyS?1:0) - (keys.KeyW?1:0));
-  const moving = mx*mx+mz*mz>.01;
+============================================================ */
+
+$("start").onclick=()=>{
+
+  $("title").style.display="none";
+
+  started=true;
+
+  initAudio();
+
+  if(audio.state==="suspended"){
+
+    audio.resume();
+
+  }
 
   if(!isMobile){
-    sprinting = ((keys.ShiftLeft || keys.ShiftRight) && moving);
+
+    canvas.requestPointerLock();
+
   }
-  if(stamina<=2) sprinting=false;
+
+  message(
+
+    "OPERATION WHITEOUT // DEPLOYED"
+
+  );
+
+};
+
+/* ============================================================
+
+   RESET
+
+============================================================ */
+
+$("restart").onclick=()=>{
+
+  hp=100;
+
+  stamina=100;
+
+  ammo=30;
+
+  kills=0;
+
+  alive=true;
+
+  bossAwake=false;
+
+  boss.hp=boss.maxHp;
+
+  boss.g.visible=false;
+
+  $("boss").style.display="none";
+
+  $("death").style.display="none";
+
+  $("missionText").textContent=
+
+    "REACH THE ABANDONED OUTPOST";
+
+  player.position.set(
+
+    0,
+
+    terrain(0,95)+1.7,
+
+    95
+
+  );
+
+  yaw=0;
+
+  pitch=0;
+
+  enemies.forEach(
+
+    e=>scene.remove(e.g)
+
+  );
+
+  enemies.length=0;
+
+  for(let i=0;i<6;i++){
+
+    spawnEnemy();
+
+  }
+
+};
+
+/* ============================================================
+
+   GAME UPDATE
+
+============================================================ */
+
+function update(dt,time){
+
+  if(!started||!alive)return;
+
+  if(fireCooldown>0){
+
+    fireCooldown-=dt;
+
+  }
+
+  if(dodgeTimer>0){
+
+    dodgeTimer-=dt;
+
+  }
+
+  if(reloadTimer>0){
+
+    reloadTimer-=dt;
+
+    if(reloadTimer<=0){
+
+      ammo=maxAmmo;
+
+      message("RIFLE READY");
+
+    }
+
+  }
+
+  /* movement */
+
+  let mx=moveX;
+
+  let mz=moveY;
+
+  const moving=
+
+    Math.abs(mx)+Math.abs(mz)>.05;
 
   if(moving){
-    const l = Math.hypot(mx, mz);
-    mx/=l;
-    mz/=l;
-    const f = new THREE.Vector3(0,0,-1).applyQuaternion(player.quaternion);
-    f.y=0;
-    const r = new THREE.Vector3(1,0,0).applyQuaternion(player.quaternion);
-    r.y=0;
-    const d = f.multiplyScalar(-mz).add(r.multiplyScalar(mx)).normalize();
-    const speed = (sprinting ? 8.0 : 4.2) * (dodgeTime>0 ? 2.2 : 1) * dt;
-    const nx = player.position.x + d.x*speed;
-    const nz = player.position.z + d.z*speed;
+
+    const len=
+
+      Math.hypot(mx,mz);
+
+    mx/=len;
+
+    mz/=len;
+
+    const forward=
+
+      new THREE.Vector3(
+
+        0,0,-1
+
+      ).applyQuaternion(
+
+        player.quaternion
+
+      );
+
+    forward.y=0;
+
+    const right=
+
+      new THREE.Vector3(
+
+        1,0,0
+
+      ).applyQuaternion(
+
+        player.quaternion
+
+      );
+
+    right.y=0;
+
+    const direction=
+
+      forward.multiplyScalar(-mz)
+
+      .add(
+
+        right.multiplyScalar(mx)
+
+      )
+
+      .normalize();
+
+    let speed=
+
+      sprinting?7.5:4;
+
+    if(dodgeTimer>0){
+
+      speed*=2.5;
+
+    }
+
+    const nx=
+
+      player.position.x+
+
+      direction.x*speed*dt;
+
+    const nz=
+
+      player.position.z+
+
+      direction.z*speed*dt;
+
     let blocked=false;
+
     for(const o of obstacles){
-      const dx = nx-o.x;
-      const dz = nz-o.z;
-      if(dx*dx+dz*dz < (o.r+.65)**2){
+
+      const dx=
+
+        nx-o.x;
+
+      const dz=
+
+        nz-o.z;
+
+      if(
+
+        dx*dx+dz*dz<
+
+        (o.r+.7)*(o.r+.7)
+
+      ){
+
         blocked=true;
+
         break;
+
       }
+
     }
+
     if(!blocked){
-      player.position.x = nx;
-      player.position.z = nz;
+
+      player.position.x=nx;
+
+      player.position.z=nz;
+
     }
+
+    if(sprinting){
+
+      stamina=
+
+        Math.max(
+
+          0,
+
+          stamina-dt*28
+
+        );
+
+      if(stamina<=1){
+
+        sprinting=false;
+
+      }
+
+    }else{
+
+      stamina=
+
+        Math.min(
+
+          100,
+
+          stamina+dt*17
+
+        );
+
+    }
+
   }
 
-  player.position.y = terrainHeight(player.position.x, player.position.z) + 1.7 + Math.sin(t*10)*(moving ? .025 : 0);
+  player.position.y=
 
-  if(sprinting){
-    stamina = Math.max(0, stamina-dt*26);
-  }else{
-    stamina = Math.min(100, stamina+dt*15);
-  }
+    terrain(
 
-  const targetFov = aiming ? 16 : 72;
-  camera.fov = THREE.MathUtils.lerp(camera.fov, targetFov, dt*10);
+      player.position.x,
+
+      player.position.z
+
+    )+
+
+    1.7+
+
+    (moving?
+
+      Math.sin(time*10)*.025:
+
+      0
+
+    );
+
+  /* camera */
+
+  const targetFOV=
+
+    aiming?18:72;
+
+  camera.fov=
+
+    THREE.MathUtils.lerp(
+
+      camera.fov,
+
+      targetFOV,
+
+      dt*10
+
+    );
+
   camera.updateProjectionMatrix();
 
-  // rifle sway + walk bob + ADS + recoil
-  if(recoilT>0) recoilT = Math.max(0, recoilT-dt*5.5);
-  muzzleFlash.material.opacity = recoilT>0.6 ? (recoilT-0.6)/0.4 : 0;
-  const bobA = moving ? t*(sprinting?11:7.5) : t*1.4;
-  const bobAmt = moving ? (sprinting?.028:.016) : .006;
-  const adsX = aiming ? -.32 : 0;
-  const adsY = aiming ? .105 : 0;
-  const adsZ = aiming ? .2 : 0;
-  rifleRest.position.x = THREE.MathUtils.lerp(rifleRest.position.x, .32+adsX+Math.sin(bobA)*bobAmt*.6, dt*12);
-  rifleRest.position.y = THREE.MathUtils.lerp(rifleRest.position.y, -.26+adsY+Math.abs(Math.sin(bobA))*bobAmt+recoilT*.05, dt*12);
-  rifleRest.position.z = THREE.MathUtils.lerp(rifleRest.position.z, -.55+adsZ+recoilT*.08, dt*14);
-  rifle.rotation.x = THREE.MathUtils.lerp(rifle.rotation.x, -recoilT*.22, dt*16);
-  rifle.rotation.z = THREE.MathUtils.lerp(rifle.rotation.z, Math.sin(bobA*.5)*.01, dt*10);
+  /* weapon */
 
-  if(uvHeld && uv>0){
-    uv = Math.max(0, uv-dt*15);
-    uvLight.intensity = THREE.MathUtils.lerp(uvLight.intensity, 4.0, dt*9);
-  }else{
-    uv = Math.min(100, uv+dt*5);
-    uvLight.intensity = THREE.MathUtils.lerp(uvLight.intensity, 0, dt*7);
+  const bob=
+
+    moving?
+
+      Math.sin(time*8)*.018:
+
+      0;
+
+  weaponRoot.position.x=
+
+    THREE.MathUtils.lerp(
+
+      weaponRoot.position.x,
+
+      .32+(aiming?-.3:0)+bob,
+
+      dt*10
+
+    );
+
+  weaponRoot.position.y=
+
+    THREE.MathUtils.lerp(
+
+      weaponRoot.position.y,
+
+      -.28+(aiming?.1:0)+
+
+      Math.abs(bob)*.5,
+
+      dt*10
+
+    );
+
+  /* snow movement */
+
+  const sp=
+
+    snowGeo.attributes.position.array;
+
+  for(let i=0;i<snowCount;i++){
+
+    sp[i*3+1]-=
+
+      dt*(2.5+Math.sin(i)*1.2);
+
+    sp[i*3]+=
+
+      Math.sin(time+i)*.006;
+
+    if(sp[i*3+1]<0){
+
+      sp[i*3+1]=40;
+
+    }
+
   }
 
-  moon.intensity = 1.3 + Math.sin(t*.8)*.08 + Math.sin(t*3.7)*.03;
-  fireLight.intensity = 1.2 + Math.sin(t*5)*.2;
+  snowGeo.attributes.position.needsUpdate=true;
 
-  const distShrine = Math.hypot(player.position.x, player.position.z);
-  if(!shrineReached && distShrine<12){
-    shrineReached=true;
-    relics=3;
-    showMsg("THE ANCIENT SHRINE HAS AWAKENED");
-    $("objective").textContent = "The Naga is awakening...";
-    setTimeout(() => {
-      nagaAwake=true;
-      naga.group.visible = true;
-      naga.group.position.set(0, terrainHeight(0,0), 0);
-      $("boss").style.display = "block";
-      $("objective").textContent = "Survive — banish the Ancient Naga";
-      showMsg("THE ANCIENT NAGA AWAKENS");
-    }, 2200);
-  }
-
-  $("distance").textContent = "NAGALOKA • "+Math.max(0, Math.round(distShrine))+" m";
+  /* enemies */
 
   for(const e of [...enemies]){
-    const dx = player.position.x - e.g.position.x;
-    const dz = player.position.z - e.g.position.z;
-    const d = Math.hypot(dx, dz) || 1;
-    if(e.lurchT>0) e.lurchT -= dt;
-    if(d<28){
-      // unsettling stutter-lurch: brief bursts of speed instead of smooth glide
-      if(e.lurchT<=0 && Math.random()<dt*.6){ e.lurchT = .18+Math.random()*.22; }
-      const lurch = e.lurchT>0 ? 2.6 : 1;
-      e.g.position.x += dx/d*e.speed*lurch*dt;
-      e.g.position.z += dz/d*e.speed*lurch*dt;
-      // high-frequency twitch/jitter so it never glides cleanly
-      e.g.position.x += Math.sin(t*23+e.jitterSeed)*.006;
-      e.g.position.z += Math.cos(t*19+e.jitterSeed)*.006;
-      if(d<2.3 && t-e.last>1.2){
-        damage(e.kind==="hunter" ? 16 : 9);
-        e.last=t;
-      }
-      if(!e.screeched && d<15){
-        e.screeched = true;
-        playScreech(e.kind==="hunter");
-      }
+
+    const dx=
+
+      player.position.x-
+
+      e.g.position.x;
+
+    const dz=
+
+      player.position.z-
+
+      e.g.position.z;
+
+    const d=
+
+      Math.hypot(dx,dz)||1;
+
+    if(d<45){
+
+      e.g.position.x+=
+
+        dx/d*
+
+        e.speed*
+
+        dt;
+
+      e.g.position.z+=
+
+        dz/d*
+
+        e.speed*
+
+        dt;
+
     }
-    if(d>=28){ e.screeched = false; }
-    e.g.position.y = terrainHeight(e.g.position.x, e.g.position.z) + 1.15 + Math.sin(t*3+e.phase)*.1;
-    e.g.rotation.y = Math.atan2(dx, dz) + Math.PI;
-    const wings = e.g.userData.wings;
-    if(wings){
-      const flap = Math.sin(t*(e.kind==="hunter"?15:10)+e.phase)*.5;
-      wings[0].rotation.z = flap;
-      wings[1].rotation.z = -flap;
+
+    e.g.position.y=
+
+      terrain(
+
+        e.g.position.x,
+
+        e.g.position.z
+
+      );
+
+    e.g.rotation.y=
+
+      Math.atan2(dx,dz)+Math.PI;
+
+    e.g.position.y+=
+
+      Math.sin(
+
+        time*4+
+
+        e.phase
+
+      )*.04;
+
+    if(
+
+      d<3 &&
+
+      time-e.attack>1.2
+
+    ){
+
+      damage(10);
+
+      e.attack=time;
+
     }
-    const limbs = e.g.userData.limbs;
-    if(limbs){
-      const twitch = Math.sin(t*6+e.jitterSeed)*.12 + (e.lurchT>0?.3:0);
-      limbs[0].rotation.z = .15+twitch;
-      limbs[1].rotation.z = -.15-twitch;
-    }
+
   }
 
-  if(nagaAwake){
-    const dx = player.position.x - naga.group.position.x;
-    const dz = player.position.z - naga.group.position.z;
-    const d = Math.hypot(dx, dz) || 1;
-    naga.group.position.x += dx/d*.8*dt;
-    naga.group.position.z += dz/d*.8*dt;
-    naga.group.position.y = terrainHeight(naga.group.position.x, naga.group.position.z);
-    naga.group.rotation.y += dt*.35;
-    naga.phase += dt;
-    naga.group.scale.setScalar(1 + Math.sin(naga.phase*2)*.035);
-    if(d<5 && t-naga.lastAttack>1.6){
+  /* mission trigger */
+
+  const dist=
+
+    Math.hypot(
+
+      player.position.x,
+
+      player.position.z
+
+    );
+
+  if(
+
+    !bossAwake &&
+
+    dist<14
+
+  ){
+
+    bossAwake=true;
+
+    boss.g.visible=true;
+
+    boss.g.position.set(
+
+      0,
+
+      terrain(0,0),
+
+      -12
+
+    );
+
+    $("boss").style.display="block";
+
+    $("missionText").textContent=
+
+      "ELIMINATE THE FROZEN COMMANDER";
+
+    message(
+
+      "WARNING // MASSIVE CONTACT"
+
+    );
+
+  }
+
+  /* boss */
+
+  if(bossAwake){
+
+    const dx=
+
+      player.position.x-
+
+      boss.g.position.x;
+
+    const dz=
+
+      player.position.z-
+
+      boss.g.position.z;
+
+    const d=
+
+      Math.hypot(dx,dz)||1;
+
+    if(d>4){
+
+      boss.g.position.x+=
+
+        dx/d*.8*dt;
+
+      boss.g.position.z+=
+
+        dz/d*.8*dt;
+
+    }
+
+    boss.g.position.y=
+
+      terrain(
+
+        boss.g.position.x,
+
+        boss.g.position.z
+
+      );
+
+    boss.g.rotation.y=
+
+      Math.atan2(dx,dz)+Math.PI;
+
+    if(
+
+      d<6 &&
+
+      time-boss.attack>1.5
+
+    ){
+
       damage(24);
-      naga.lastAttack=t;
+
+      boss.attack=time;
+
     }
-    $("bossfill").style.width = Math.max(0, naga.hp/naga.maxHp*100)+"%";
+
+    $("bossFill").style.width=
+
+      Math.max(
+
+        0,
+
+        boss.hp/boss.maxHp*100
+
+      )+"%";
+
   }
 
-  if(Math.random()<dt*.025 && enemies.length<7 && !nagaAwake){
-    spawnSpirit();
+  /* spawn */
+
+  if(
+
+    !bossAwake &&
+
+    enemies.length<8 &&
+
+    Math.random()<dt*.045
+
+  ){
+
+    spawnEnemy();
+
   }
 
-  const p = pg.attributes.position.array;
-  for(let i=0;i<pc;i++){
-    p[i*3] += Math.sin(t*.25+i)*.0008;
-    p[i*3+1] += Math.sin(t*.6+i)*.0015;
-  }
-  pg.attributes.position.needsUpdate=true;
+  /* HUD */
 
-  $("hp").style.width = Math.max(0, hp)+"%";
-  $("st").style.width = stamina+"%";
-  $("uv").style.width = uv+"%";
-  $("status").textContent = nagaAwake ? "THE NAGA IS HUNTING" : "THE FOREST IS WATCHING";
-  $("vignette").style.boxShadow = hp<35
-    ? `inset 0 0 18vw 5vw rgba(100,0,0,.55)`
-    : `inset 0 0 14vw 4vw rgba(0,0,0,.58)`;
+  $("health").style.width=
+
+    Math.max(0,hp)+"%";
+
+  $("stamina").style.width=
+
+    stamina+"%";
+
+  $("ammo").textContent=
+
+    ammo;
+
+  $("vignette").style.boxShadow=
+
+    hp<30
+
+    ?
+
+    "inset 0 0 18vw 6vw rgba(130,0,0,.65)"
+
+    :
+
+    "inset 0 0 15vw 5vw rgba(0,0,0,.7)";
+
 }
 
 /* ============================================================
-   GAME LOOP
-   ============================================================ */
+
+   LOOP
+
+============================================================ */
 
 function animate(){
-  requestAnimationFrame(animate);
-  const dt = Math.min(clock.getDelta(), .05);
-  const t = clock.elapsedTime;
-  update(dt, t);
-  starMat.uniforms.uTime.value = t;
-  stars.position.set(player.position.x, 0, player.position.z);
-  renderer.render(scene, camera);
+
+  requestAnimationFrame(
+
+    animate
+
+  );
+
+  const dt=
+
+    Math.min(
+
+      clock.getDelta(),
+
+      .05
+
+    );
+
+  const time=
+
+    clock.elapsedTime;
+
+  update(
+
+    dt,
+
+    time
+
+  );
+
+  renderer.render(
+
+    scene,
+
+    camera
+
+  );
+
 }
+
 animate();
 
 /* ============================================================
-   RESIZE
-   ============================================================ */
 
-addEventListener("resize", () => {
-  camera.aspect = innerWidth/innerHeight;
+   RESIZE
+
+============================================================ */
+
+window.addEventListener(
+
+"resize",
+
+()=>{
+
+  camera.aspect=
+
+    innerWidth/innerHeight;
+
   camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
+
+  renderer.setSize(
+
+    innerWidth,
+
+    innerHeight
+
+  );
+
 });
 
 })();
+
 </script>
+
 </body>
+
 </html>
